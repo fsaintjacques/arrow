@@ -27,7 +27,7 @@
 #'    for file paths like "2019/01/file.parquet", "2019/02/file.parquet", etc.
 #'   * A `HivePartitionScheme`, as returned by [hive_partition()]
 #'   * `NULL`, the default, for no partitioning
-#' @param ... additional arguments passed to `SourceDiscovery$create()`
+#' @param ... additional arguments passed to `SourceManifest$create()`
 #' @return A [Dataset] R6 object. Use `dplyr` methods on it to query the data,
 #' or call `$NewScan()` to construct a query directly.
 #' @export
@@ -41,7 +41,7 @@ open_dataset <- function (path, schema = NULL, partition = NULL, ...) {
     }
     assert_is(partition, "PartitionScheme")
   }
-  dsd <- SourceDiscovery$create(path, partition_scheme = partition, ...)
+  dsd <- SourceManifest$create(path, partition_scheme = partition, ...)
   if (is.null(schema)) {
     schema <- dsd$Inspect()
   }
@@ -94,14 +94,14 @@ names.Dataset <- function(x) names(x$schema)
 #' @description
 #' A [Dataset] can have one or more `Source`s. A `Source` contains one
 #' or more `Fragments`, such as files, of a common type and partition
-#' scheme. `SourceDiscovery` is used to create a `Source`, inspect the
+#' scheme. `SourceManifest` is used to create a `Source`, inspect the
 #' [Schema] of the fragments contained in it, and declare a partition scheme.
-#' `FileSystemSourceDiscovery` is a subclass of `SourceDiscovery` for
+#' `FileSystemSourceManifest` is a subclass of `SourceManifest` for
 #' discovering files in the local file system, the only currently supported
 #' file system.
 #' @section Factory:
-#' The `SourceDiscovery$create()` factory method instantiates a
-#' `SourceDiscovery` and takes the following arguments:
+#' The `SourceManifest$create()` factory method instantiates a
+#' `SourceManifest` and takes the following arguments:
 #' * `path`: A string file path containing data files
 #' * `filesystem`: Currently only "local" is supported
 #' * `format`: Currently only "parquet" is supported
@@ -111,7 +111,7 @@ names.Dataset <- function(x) names(x$schema)
 #' * `path`? Default `TRUE`.
 #' * `...` Additional arguments passed to the [FileSystem] `$create()` method
 #'
-#' `FileSystemSourceDiscovery$create()` is a lower-level factory method and
+#' `FileSystemSourceManifest$create()` is a lower-level factory method and
 #' takes the following arguments:
 #' * `filesystem`: A [FileSystem]
 #' * `selector`: A [FileSelector]
@@ -119,7 +119,7 @@ names.Dataset <- function(x) names(x$schema)
 #' @section Methods:
 #' `Source` has no defined methods. It is just passed to `Dataset$create()`.
 #'
-#' `SourceDiscovery` and its subclasses have the following methods:
+#' `SourceManifest` and its subclasses have the following methods:
 #'
 #' - `$Inspect()`: Walks the files in the directory and returns a common [Schema]
 #' - `$Finish(schema)`: Returns a `Source`
@@ -133,19 +133,19 @@ Source <- R6Class("Source", inherit = Object)
 #' @format NULL
 #' @rdname Source
 #' @export
-SourceDiscovery <- R6Class("SourceDiscovery", inherit = Object,
+SourceManifest <- R6Class("SourceManifest", inherit = Object,
   public = list(
     Finish = function(schema = NULL) {
       if (is.null(schema)) {
-        shared_ptr(Source, dataset___DSDiscovery__Finish1(self))
+        shared_ptr(Source, dataset___SManifest__Finish1(self))
       } else {
-        shared_ptr(Source, dataset___DSDiscovery__Finish2(self, schema))
+        shared_ptr(Source, dataset___SManifest__Finish2(self, schema))
       }
     },
-    Inspect = function() shared_ptr(Schema, dataset___DSDiscovery__Inspect(self))
+    Inspect = function() shared_ptr(Schema, dataset___SManifest__Inspect(self))
   )
 )
-SourceDiscovery$create <- function(path,
+SourceManifest$create <- function(path,
                                        filesystem = c("auto", "local"),
                                        format = c("parquet"),
                                        allow_non_existent = FALSE,
@@ -169,17 +169,17 @@ SourceDiscovery$create <- function(path,
     recursive = recursive
   )
   # This may also require different initializers
-  FileSystemSourceDiscovery$create(filesystem, selector, format, partition_scheme)
+  FileSystemSourceManifest$create(filesystem, selector, format, partition_scheme)
 }
 
 #' @usage NULL
 #' @format NULL
 #' @rdname Source
 #' @export
-FileSystemSourceDiscovery <- R6Class("FileSystemSourceDiscovery",
-  inherit = SourceDiscovery
+FileSystemSourceManifest <- R6Class("FileSystemSourceManifest",
+  inherit = SourceManifest
 )
-FileSystemSourceDiscovery$create <- function(filesystem,
+FileSystemSourceManifest$create <- function(filesystem,
                                                  selector,
                                                  format = "parquet",
                                                  partition_scheme = NULL) {
@@ -188,14 +188,14 @@ FileSystemSourceDiscovery$create <- function(filesystem,
   format <- match.arg(format) # Only parquet for now
   if (is.null(partition_scheme)) {
     shared_ptr(
-      FileSystemSourceDiscovery,
-      dataset___FSDSDiscovery__Make1(filesystem, selector)
+      FileSystemSourceManifest,
+      dataset___FSSManifest__Make1(filesystem, selector)
     )
   } else {
     assert_is(partition_scheme, "PartitionScheme")
     shared_ptr(
-      FileSystemSourceDiscovery,
-      dataset___FSDSDiscovery__Make2(filesystem, selector, partition_scheme)
+      FileSystemSourceManifest,
+      dataset___FSSManifest__Make2(filesystem, selector, partition_scheme)
     )
   }
 }
@@ -263,7 +263,7 @@ names.ScannerBuilder <- function(x) names(x$schema)
 #' Define a partition scheme for a Source
 #'
 #' @description
-#' Pass a `PartitionScheme` to a [FileSystemSourceDiscovery]'s `$create()`
+#' Pass a `PartitionScheme` to a [FileSystemSourceManifest]'s `$create()`
 #' method to indicate how the file's paths should be interpreted to define
 #' partitioning.
 #'

@@ -51,8 +51,7 @@ using FragmentVector = std::vector<std::shared_ptr<Fragment>>;
 class Source;
 using SourceVector = std::vector<std::shared_ptr<Source>>;
 
-struct DiscoveryOptions;
-class SourceDiscovery;
+class SourceManifest;
 
 class FileFormat;
 
@@ -72,9 +71,9 @@ class ExpressionEvaluator;
 
 class PartitionScheme;
 
-class PartitionSchemeDiscovery;
+class PartitionSchemeManifest;
 
-class PartitionSchemeOrDiscovery;
+class PartitionSchemeOrManifest;
 
 struct ScanContext;
 

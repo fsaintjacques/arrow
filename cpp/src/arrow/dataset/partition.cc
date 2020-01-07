@@ -119,9 +119,9 @@ inline std::shared_ptr<Schema> InferSchema(
   return ::arrow::schema(std::move(fields));
 }
 
-class SchemaPartitionSchemeDiscovery : public PartitionSchemeDiscovery {
+class SchemaPartitionSchemeManifest : public PartitionSchemeManifest {
  public:
-  explicit SchemaPartitionSchemeDiscovery(std::vector<std::string> field_names)
+  explicit SchemaPartitionSchemeManifest(std::vector<std::string> field_names)
       : field_names_(std::move(field_names)) {}
 
   Result<std::shared_ptr<Schema>> Inspect(
@@ -159,10 +159,10 @@ class SchemaPartitionSchemeDiscovery : public PartitionSchemeDiscovery {
   std::vector<std::string> field_names_;
 };
 
-std::shared_ptr<PartitionSchemeDiscovery> SchemaPartitionScheme::MakeDiscovery(
+std::shared_ptr<PartitionSchemeManifest> SchemaPartitionScheme::MakeManifest(
     std::vector<std::string> field_names) {
-  return std::shared_ptr<PartitionSchemeDiscovery>(
-      new SchemaPartitionSchemeDiscovery(std::move(field_names)));
+  return std::shared_ptr<PartitionSchemeManifest>(
+      new SchemaPartitionSchemeManifest(std::move(field_names)));
 }
 
 util::optional<PartitionKeysScheme::Key> HivePartitionScheme::ParseKey(
@@ -177,7 +177,7 @@ util::optional<PartitionKeysScheme::Key> HivePartitionScheme::ParseKey(
   return Key{matches[1].str(), matches[2].str()};
 }
 
-class HivePartitionSchemeDiscovery : public PartitionSchemeDiscovery {
+class HivePartitionSchemeManifest : public PartitionSchemeManifest {
  public:
   Result<std::shared_ptr<Schema>> Inspect(
       const std::vector<string_view>& paths) const override {
@@ -203,8 +203,8 @@ class HivePartitionSchemeDiscovery : public PartitionSchemeDiscovery {
   std::string partition_base_dir_;
 };
 
-std::shared_ptr<PartitionSchemeDiscovery> HivePartitionScheme::MakeDiscovery() {
-  return std::shared_ptr<PartitionSchemeDiscovery>(new HivePartitionSchemeDiscovery());
+std::shared_ptr<PartitionSchemeManifest> HivePartitionScheme::MakeManifest() {
+  return std::shared_ptr<PartitionSchemeManifest>(new HivePartitionSchemeManifest());
 }
 
 }  // namespace dataset

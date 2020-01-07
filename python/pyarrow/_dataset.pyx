@@ -118,24 +118,24 @@ cdef class PartitionScheme:
         return pyarrow_wrap_schema(self.scheme.schema())
 
 
-cdef class PartitionSchemeDiscovery:
+cdef class PartitionSchemeManifest:
 
     cdef:
-        shared_ptr[CPartitionSchemeDiscovery] wrapped
-        CPartitionSchemeDiscovery* discovery
+        shared_ptr[CPartitionSchemeManifest] wrapped
+        CPartitionSchemeManifest* manifest
 
     def __init__(self):
         _forbid_instantiation(self.__class__)
 
     @staticmethod
-    cdef wrap(const shared_ptr[CPartitionSchemeDiscovery]& sp):
-        cdef PartitionSchemeDiscovery self
-        self = PartitionSchemeDiscovery()
+    cdef wrap(const shared_ptr[CPartitionSchemeManifest]& sp):
+        cdef PartitionSchemeManifest self
+        self = PartitionSchemeManifest()
         self.wrapped = sp
-        self.discovery = sp.get()
+        self.manifest = sp.get()
         return self
 
-    cdef inline shared_ptr[CPartitionSchemeDiscovery] unwrap(self):
+    cdef inline shared_ptr[CPartitionSchemeManifest] unwrap(self):
         return self.wrapped
 
 
@@ -188,10 +188,10 @@ cdef class HivePartitionScheme(PartitionScheme):
         self.hive_scheme = <CHivePartitionScheme*> sp.get()
 
 
-cdef class FileSystemDiscoveryOptions:
+cdef class FileSystemManifestOptions:
 
     cdef:
-        CFileSystemDiscoveryOptions options
+        CFileSystemManifestOptions options
 
     __slots__ = ()  # avoid mistakingly creating attributes
 
@@ -204,14 +204,14 @@ cdef class FileSystemDiscoveryOptions:
         if ignore_prefixes is not None:
             self.ignore_prefixes = ignore_prefixes
 
-    cdef inline CFileSystemDiscoveryOptions unwrap(self):
+    cdef inline CFileSystemManifestOptions unwrap(self):
         return self.options
 
     @property
     def partition_scheme(self):
         """PartitionScheme to apply to discovered files.
 
-        NOTE: setting this property will overwrite partition_scheme_discovery.
+        NOTE: setting this property will overwrite partition_scheme_manifest.
         """
         cdef shared_ptr[CPartitionScheme] s = self.options.partition_scheme.scheme()
         if s.get() == nullptr:
@@ -223,20 +223,20 @@ cdef class FileSystemDiscoveryOptions:
         self.options.partition_scheme = (<PartitionScheme> value).unwrap()
 
     @property
-    def partition_scheme_discovery(self):
-        """PartitionSchemeDiscovery to apply to discovered files and
+    def partition_scheme_manifest(self):
+        """PartitionSchemeManifest to apply to discovered files and
         discover a PartitionScheme.
 
         NOTE: setting this property will overwrite partition_scheme.
         """
-        cdef shared_ptr[CPartitionSchemeDiscovery] d = self.options.partition_scheme.discovery()
+        cdef shared_ptr[CPartitionSchemeManifest] d = self.options.partition_scheme.manifest()
         if d.get() == nullptr:
             return None
-        return PartitionSchemeDiscovery.wrap(d)
+        return PartitionSchemeManifest.wrap(d)
 
-    @partition_scheme_discovery.setter
-    def partition_scheme_discovery(self, PartitionSchemeDiscovery value):
-        self.options.partition_scheme = (<PartitionSchemeDiscovery> value).unwrap()
+    @partition_scheme_manifest.setter
+    def partition_scheme_manifest(self, PartitionSchemeManifest value):
+        self.options.partition_scheme = (<PartitionSchemeManifest> value).unwrap()
 
     @property
     def partition_base_dir(self):
@@ -263,32 +263,32 @@ cdef class FileSystemDiscoveryOptions:
         self.options.ignore_prefixes = [tobytes(v) for v in values]
 
 
-cdef class SourceDiscovery:
+cdef class SourceManifest:
 
     cdef:
-        shared_ptr[CSourceDiscovery] wrapped
-        CSourceDiscovery* discovery
+        shared_ptr[CSourceManifest] wrapped
+        CSourceManifest* manifest
 
     def __init__(self):
         _forbid_instantiation(self.__class__)
 
-    cdef init(self, shared_ptr[CSourceDiscovery]& sp):
+    cdef init(self, shared_ptr[CSourceManifest]& sp):
         self.wrapped = sp
-        self.discovery = sp.get()
+        self.manifest = sp.get()
 
     @staticmethod
-    cdef wrap(shared_ptr[CSourceDiscovery]& sp):
-        cdef SourceDiscovery self = \
-            SourceDiscovery.__new__(SourceDiscovery)
+    cdef wrap(shared_ptr[CSourceManifest]& sp):
+        cdef SourceManifest self = \
+            SourceManifest.__new__(SourceManifest)
         self.init(sp)
         return self
 
-    cdef inline shared_ptr[CSourceDiscovery] unwrap(self) nogil:
+    cdef inline shared_ptr[CSourceManifest] unwrap(self) nogil:
         return self.wrapped
 
     @property
     def root_partition(self):
-        cdef shared_ptr[CExpression] expr = self.discovery.root_partition()
+        cdef shared_ptr[CExpression] expr = self.manifest.root_partition()
         if expr.get() == nullptr:
             return None
         else:
@@ -296,12 +296,12 @@ cdef class SourceDiscovery:
 
     @root_partition.setter
     def root_partition(self, Expression expr):
-        check_status(self.discovery.SetRootPartition(expr.unwrap()))
+        check_status(self.manifest.SetRootPartition(expr.unwrap()))
 
     def inspect_schemas(self):
         cdef CResult[vector[shared_ptr[CSchema]]] result
         with nogil:
-            result = self.discovery.InspectSchemas()
+            result = self.manifest.InspectSchemas()
 
         schemas = []
         for s in GetResultValue(result):
@@ -311,7 +311,7 @@ cdef class SourceDiscovery:
     def inspect(self):
         cdef CResult[shared_ptr[CSchema]] result
         with nogil:
-            result = self.discovery.Inspect()
+            result = self.manifest.Inspect()
         return pyarrow_wrap_schema(GetResultValue(result))
 
     def finish(self, Schema schema = None):
@@ -321,40 +321,40 @@ cdef class SourceDiscovery:
         if schema is not None:
             sp_schema = pyarrow_unwrap_schema(schema)
             with nogil:
-                result = self.discovery.Finish(sp_schema)
+                result = self.manifest.Finish(sp_schema)
         else:
             with nogil:
-                result = self.discovery.Finish()
+                result = self.manifest.Finish()
         return Source.wrap(GetResultValue(result))
 
 
-cdef class FileSystemSourceDiscovery(SourceDiscovery):
+cdef class FileSystemSourceManifest(SourceManifest):
 
     cdef:
-        CFileSystemSourceDiscovery* filesystem_discovery
+        CFileSystemSourceManifest* filesystem_manifest
 
     def __init__(self, FileSystem filesystem not None, paths_or_selector,
                  FileFormat format not None,
-                 FileSystemDiscoveryOptions options=None):
+                 FileSystemManifestOptions options=None):
         cdef:
             vector[c_string] paths
             CFileSelector selector
-            CResult[shared_ptr[CSourceDiscovery]] result
+            CResult[shared_ptr[CSourceManifest]] result
             shared_ptr[CFileSystem] c_filesystem
             shared_ptr[CFileFormat] c_format
-            CFileSystemDiscoveryOptions c_options
+            CFileSystemManifestOptions c_options
 
         c_filesystem = filesystem.unwrap()
 
         c_format = format.unwrap()
 
-        options = options or FileSystemDiscoveryOptions()
+        options = options or FileSystemManifestOptions()
         c_options = options.unwrap()
 
         if isinstance(paths_or_selector, FileSelector):
             with nogil:
                 selector = (<FileSelector>paths_or_selector).selector
-                result = CFileSystemSourceDiscovery.MakeFromSelector(
+                result = CFileSystemSourceManifest.MakeFromSelector(
                     c_filesystem,
                     selector,
                     c_format,
@@ -363,7 +363,7 @@ cdef class FileSystemSourceDiscovery(SourceDiscovery):
         elif isinstance(paths_or_selector, (list, tuple)):
             paths = [tobytes(s) for s in paths_or_selector]
             with nogil:
-                result = CFileSystemSourceDiscovery.MakeFromPaths(
+                result = CFileSystemSourceManifest.MakeFromPaths(
                     c_filesystem,
                     paths,
                     c_format,
@@ -374,17 +374,13 @@ cdef class FileSystemSourceDiscovery(SourceDiscovery):
 
         self.init(GetResultValue(result))
 
-    cdef init(self, shared_ptr[CSourceDiscovery]& sp):
-        SourceDiscovery.init(self, sp)
-        self.filesystem_discovery = <CFileSystemSourceDiscovery*> sp.get()
+    cdef init(self, shared_ptr[CSourceManifest]& sp):
+        SourceManifest.init(self, sp)
+        self.filesystem_manifest = <CFileSystemSourceManifest*> sp.get()
 
 
 cdef class Source:
-    """Basic component of a Dataset which yields zero or more data fragments.
-
-    A Source acts as a discovery mechanism of data fragments and
-    partitions, e.g. files deeply nested in a directory.
-    """
+    """Basic component of a Dataset which yields zero or more fragments.  """
 
     cdef:
         shared_ptr[CSource] wrapped

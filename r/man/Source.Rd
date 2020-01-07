@@ -3,8 +3,8 @@
 \docType{data}
 \name{Source}
 \alias{Source}
-\alias{SourceDiscovery}
-\alias{FileSystemSourceDiscovery}
+\alias{SourceManifest}
+\alias{FileSystemSourceManifest}
 \title{Data sources for a Dataset}
 \format{An object of class \code{R6ClassGenerator} of length 24.}
 \usage{
@@ -13,16 +13,16 @@ Source
 \description{
 A \link{Dataset} can have one or more \code{Source}s. A \code{Source} contains one
 or more \code{Fragments}, such as files, of a common type and partition
-scheme. \code{SourceDiscovery} is used to create a \code{Source}, inspect the
+scheme. \code{SourceManifest} is used to create a \code{Source}, inspect the
 \link{Schema} of the fragments contained in it, and declare a partition scheme.
-\code{FileSystemSourceDiscovery} is a subclass of \code{SourceDiscovery} for
+\code{FileSystemSourceManifest} is a subclass of \code{SourceManifest} for
 discovering files in the local file system, the only currently supported
 file system.
 }
 \section{Factory}{
 
-The \code{SourceDiscovery$create()} factory method instantiates a
-\code{SourceDiscovery} and takes the following arguments:
+The \code{SourceManifest$create()} factory method instantiates a
+\code{SourceManifest} and takes the following arguments:
 \itemize{
 \item \code{path}: A string file path containing data files
 \item \code{filesystem}: Currently only "local" is supported
@@ -34,7 +34,7 @@ The \code{SourceDiscovery$create()} factory method instantiates a
 \item \code{...} Additional arguments passed to the \link{FileSystem} \code{$create()} method
 }
 
-\code{FileSystemSourceDiscovery$create()} is a lower-level factory method and
+\code{FileSystemSourceManifest$create()} is a lower-level factory method and
 takes the following arguments:
 \itemize{
 \item \code{filesystem}: A \link{FileSystem}
@@ -47,7 +47,7 @@ takes the following arguments:
 
 \code{Source} has no defined methods. It is just passed to \code{Dataset$create()}.
 
-\code{SourceDiscovery} and its subclasses have the following methods:
+\code{SourceManifest} and its subclasses have the following methods:
 \itemize{
 \item \code{$Inspect()}: Walks the files in the directory and returns a common \link{Schema}
 \item \code{$Finish(schema)}: Returns a \code{Source}

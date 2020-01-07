@@ -22,7 +22,7 @@ for file paths like "2019/01/file.parquet", "2019/02/file.parquet", etc.
 \item \code{NULL}, the default, for no partitioning
 }}
 
-\item{...}{additional arguments passed to \code{SourceDiscovery$create()}}
+\item{...}{additional arguments passed to \code{SourceManifest$create()}}
 }
 \value{
 A \link{Dataset} R6 object. Use \code{dplyr} methods on it to query the data,

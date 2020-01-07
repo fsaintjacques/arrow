@@ -73,18 +73,15 @@ std::shared_ptr<ds::Dataset> GetDatasetFromPath(std::shared_ptr<fs::FileSystem> 
   s.base_dir = path;
   s.recursive = true;
 
-  ds::FileSystemDiscoveryOptions options;
-  // The discovery will try to build a source.
-  auto discovery =
-      ds::FileSystemSourceDiscovery::Make(fs, s, format, options).ValueOrDie();
+  ds::FileSystemManifestOptions options;
+  // The manifest will try to build a source.
+  auto manifest = ds::FileSystemSourceManifest::Make(fs, s, format, options).ValueOrDie();
 
   // Try to infer a common schema for all files.
-  auto schema = discovery->Inspect().ValueOrDie();
+  auto schema = manifest->Inspect().ValueOrDie();
   // Caller can optionally decide another schema as long as it is compatible
-  // with the previous one.
-  //
-  // discovery->SetSchema(compatible_schema);
-  auto source = discovery->Finish().ValueOrDie();
+  // with the previous one, e.g. `manifest->Finish(compatible_schema)`.
+  auto source = manifest->Finish().ValueOrDie();
 
   ds::SourceVector sources{conf.repeat, source};
   auto dataset = ds::Dataset::Make(std::move(sources), schema);

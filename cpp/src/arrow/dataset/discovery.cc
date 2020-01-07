@@ -35,9 +35,9 @@
 namespace arrow {
 namespace dataset {
 
-SourceDiscovery::SourceDiscovery() : root_partition_(scalar(true)) {}
+SourceManifest::SourceManifest() : root_partition_(scalar(true)) {}
 
-Result<std::shared_ptr<Schema>> SourceDiscovery::Inspect() {
+Result<std::shared_ptr<Schema>> SourceManifest::Inspect() {
   ARROW_ASSIGN_OR_RAISE(auto schemas, InspectSchemas());
 
   if (schemas.empty()) {
@@ -47,9 +47,9 @@ Result<std::shared_ptr<Schema>> SourceDiscovery::Inspect() {
   return UnifySchemas(schemas);
 }
 
-FileSystemSourceDiscovery::FileSystemSourceDiscovery(
+FileSystemSourceManifest::FileSystemSourceManifest(
     std::shared_ptr<fs::FileSystem> filesystem, fs::PathForest forest,
-    std::shared_ptr<FileFormat> format, FileSystemDiscoveryOptions options)
+    std::shared_ptr<FileFormat> format, FileSystemManifestOptions options)
     : fs_(std::move(filesystem)),
       forest_(std::move(forest)),
       format_(std::move(format)),
@@ -70,9 +70,9 @@ bool StartsWithAnyOf(const std::vector<std::string>& prefixes, const std::string
   return std::any_of(prefixes.cbegin(), prefixes.cend(), matches_prefix);
 }
 
-Result<fs::PathForest> FileSystemSourceDiscovery::Filter(
+Result<fs::PathForest> FileSystemSourceManifest::Filter(
     const std::shared_ptr<fs::FileSystem>& filesystem,
-    const std::shared_ptr<FileFormat>& format, const FileSystemDiscoveryOptions& options,
+    const std::shared_ptr<FileFormat>& format, const FileSystemManifestOptions& options,
     fs::PathForest forest) {
   fs::FileStatsVector out;
 
@@ -99,9 +99,9 @@ Result<fs::PathForest> FileSystemSourceDiscovery::Filter(
   return fs::PathForest::MakeFromPreSorted(std::move(out));
 }
 
-Result<std::shared_ptr<SourceDiscovery>> FileSystemSourceDiscovery::Make(
+Result<std::shared_ptr<SourceManifest>> FileSystemSourceManifest::Make(
     std::shared_ptr<fs::FileSystem> filesystem, const std::vector<std::string>& paths,
-    std::shared_ptr<FileFormat> format, FileSystemDiscoveryOptions options) {
+    std::shared_ptr<FileFormat> format, FileSystemManifestOptions options) {
   ARROW_ASSIGN_OR_RAISE(auto files, filesystem->GetTargetStats(paths));
   ARROW_ASSIGN_OR_RAISE(auto forest, fs::PathForest::Make(std::move(files)));
 
@@ -127,13 +127,13 @@ Result<std::shared_ptr<SourceDiscovery>> FileSystemSourceDiscovery::Make(
 
   ARROW_ASSIGN_OR_RAISE(forest, Filter(filesystem, format, options, std::move(forest)));
 
-  return std::shared_ptr<SourceDiscovery>(new FileSystemSourceDiscovery(
+  return std::shared_ptr<SourceManifest>(new FileSystemSourceManifest(
       std::move(filesystem), std::move(forest), std::move(format), std::move(options)));
 }
 
-Result<std::shared_ptr<SourceDiscovery>> FileSystemSourceDiscovery::Make(
+Result<std::shared_ptr<SourceManifest>> FileSystemSourceManifest::Make(
     std::shared_ptr<fs::FileSystem> filesystem, fs::FileSelector selector,
-    std::shared_ptr<FileFormat> format, FileSystemDiscoveryOptions options) {
+    std::shared_ptr<FileFormat> format, FileSystemManifestOptions options) {
   ARROW_ASSIGN_OR_RAISE(auto files, filesystem->GetTargetStats(selector));
 
   ARROW_ASSIGN_OR_RAISE(auto forest, fs::PathForest::Make(std::move(files)));
@@ -147,11 +147,11 @@ Result<std::shared_ptr<SourceDiscovery>> FileSystemSourceDiscovery::Make(
     options.partition_base_dir = selector.base_dir;
   }
 
-  return std::shared_ptr<SourceDiscovery>(new FileSystemSourceDiscovery(
+  return std::shared_ptr<SourceManifest>(new FileSystemSourceManifest(
       filesystem, std::move(forest), std::move(format), std::move(options)));
 }
 
-Result<std::shared_ptr<Schema>> FileSystemSourceDiscovery::PartitionSchema() {
+Result<std::shared_ptr<Schema>> FileSystemSourceManifest::PartitionSchema() {
   if (auto partition_scheme = options_.partition_scheme.scheme()) {
     return partition_scheme->schema();
   }
@@ -164,10 +164,10 @@ Result<std::shared_ptr<Schema>> FileSystemSourceDiscovery::PartitionSchema() {
     }
   }
 
-  return options_.partition_scheme.discovery()->Inspect(paths);
+  return options_.partition_scheme.manifest()->Inspect(paths);
 }
 
-Result<std::vector<std::shared_ptr<Schema>>> FileSystemSourceDiscovery::InspectSchemas() {
+Result<std::vector<std::shared_ptr<Schema>>> FileSystemSourceManifest::InspectSchemas() {
   std::vector<std::shared_ptr<Schema>> schemas;
 
   for (const auto& f : forest_.stats()) {
@@ -183,19 +183,19 @@ Result<std::vector<std::shared_ptr<Schema>>> FileSystemSourceDiscovery::InspectS
   return schemas;
 }
 
-Result<std::shared_ptr<Source>> SourceDiscovery::Finish() {
+Result<std::shared_ptr<Source>> SourceManifest::Finish() {
   ARROW_ASSIGN_OR_RAISE(auto schema, Inspect());
   return Finish(schema);
 }
 
-Result<std::shared_ptr<Source>> FileSystemSourceDiscovery::Finish(
+Result<std::shared_ptr<Source>> FileSystemSourceManifest::Finish(
     const std::shared_ptr<Schema>& schema) {
   ExpressionVector partitions(forest_.size(), scalar(true));
 
   std::shared_ptr<PartitionScheme> partition_scheme = options_.partition_scheme.scheme();
   if (partition_scheme == nullptr) {
-    auto discovery = options_.partition_scheme.discovery();
-    ARROW_ASSIGN_OR_RAISE(partition_scheme, discovery->Finish(schema));
+    auto manifest = options_.partition_scheme.manifest();
+    ARROW_ASSIGN_OR_RAISE(partition_scheme, manifest->Finish(schema));
   }
 
   // apply partition_scheme to forest to derive partitions

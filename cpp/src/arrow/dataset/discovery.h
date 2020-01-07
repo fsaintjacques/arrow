@@ -36,24 +36,23 @@
 namespace arrow {
 namespace dataset {
 
-/// \brief SourceDiscovery provides a way to inspect a Source potential
+/// \brief SourceManifest provides a way to inspect/discover a Source potential
 /// schema before materializing it. Thus, the user can peek the schema for
-/// data sources and decide on a unified schema. The pseudocode would look like
+/// sources and decide on a unified schema. The pseudocode would look like
 ///
-/// def get_dataset(factories):
+/// def get_dataset(manifests):
 ///   schemas = []
-///   for f in factories:
-///     schemas.append(f.Inspect())
+///   for m in manifests:
+///     schemas.append(m.Inspect())
 ///
 ///   common_schema = UnifySchemas(schemas)
 ///
 ///   sources = []
-///   for f in factories:
-///     f.SetSchema(common_schema)
-///     sources.append(f.Finish())
+///   for m in manifests:
+///     sources.append(f.Finish(common_schema))
 ///
 ///   return Dataset(sources, common_schema)
-class ARROW_DS_EXPORT SourceDiscovery {
+class ARROW_DS_EXPORT SourceManifest {
  public:
   /// \brief Get the schemas of the Fragments and PartitionScheme.
   virtual Result<std::vector<std::shared_ptr<Schema>>> InspectSchemas() = 0;
@@ -75,24 +74,24 @@ class ARROW_DS_EXPORT SourceDiscovery {
     return Status::OK();
   }
 
-  virtual ~SourceDiscovery() = default;
+  virtual ~SourceManifest() = default;
 
  protected:
-  SourceDiscovery();
+  SourceManifest();
 
   std::shared_ptr<Expression> root_partition_;
 };
 
-struct FileSystemDiscoveryOptions {
-  // Either an explicit PartitionScheme or a PartitionSchemeDiscovery to discover one.
+struct FileSystemManifestOptions {
+  // Either an explicit PartitionScheme or a PartitionSchemeManifest to discover one.
   //
-  // If a discovery is provided, it will be used to infer a schema for partition fields
+  // If a manifest is provided, it will be used to infer a schema for partition fields
   // based on file and directory paths then construct a PartitionScheme. The default
   // is a PartitionScheme which will yield no partition information.
   //
   // The (explicit or discovered) partition scheme will be applied to discovered files
   // and the resulting partition information embedded in the Source.
-  PartitionSchemeOrDiscovery partition_scheme{PartitionScheme::Default()};
+  PartitionSchemeOrManifest partition_scheme{PartitionScheme::Default()};
 
   // For the purposes of applying the partition scheme, paths will be stripped
   // of the partition_base_dir. Files not matching the partition_base_dir
@@ -135,20 +134,20 @@ struct FileSystemDiscoveryOptions {
 
 /// \brief FileSystemSourceFactory creates a Source from a vector of
 /// fs::FileStats or a fs::FileSelector.
-class ARROW_DS_EXPORT FileSystemSourceDiscovery : public SourceDiscovery {
+class ARROW_DS_EXPORT FileSystemSourceManifest : public SourceManifest {
  public:
-  /// \brief Build a FileSystemSourceDiscovery from an explicit list of
+  /// \brief Build a FileSystemSourceManifest from an explicit list of
   /// paths.
   ///
   /// \param[in] filesystem passed to FileSystemSource
   /// \param[in] paths passed to FileSystemSource
   /// \param[in] format passed to FileSystemSource
-  /// \param[in] options see FileSystemDiscoveryOptions for more information.
-  static Result<std::shared_ptr<SourceDiscovery>> Make(
+  /// \param[in] options see FileSystemManifestOptions for more information.
+  static Result<std::shared_ptr<SourceManifest>> Make(
       std::shared_ptr<fs::FileSystem> filesystem, const std::vector<std::string>& paths,
-      std::shared_ptr<FileFormat> format, FileSystemDiscoveryOptions options);
+      std::shared_ptr<FileFormat> format, FileSystemManifestOptions options);
 
-  /// \brief Build a FileSystemSourceDiscovery from a fs::FileSelector.
+  /// \brief Build a FileSystemSourceManifest from a fs::FileSelector.
   ///
   /// The selector will expand to a vector of FileStats. The expansion/crawling
   /// is performed in this function call. Thus, the finalized Source is
@@ -160,23 +159,23 @@ class ARROW_DS_EXPORT FileSystemSourceDiscovery : public SourceDiscovery {
   /// \param[in] filesystem passed to FileSystemSource
   /// \param[in] selector used to crawl and search files
   /// \param[in] format passed to FileSystemSource
-  /// \param[in] options see FileSystemDiscoveryOptions for more information.
-  static Result<std::shared_ptr<SourceDiscovery>> Make(
+  /// \param[in] options see FileSystemManifestOptions for more information.
+  static Result<std::shared_ptr<SourceManifest>> Make(
       std::shared_ptr<fs::FileSystem> filesystem, fs::FileSelector selector,
-      std::shared_ptr<FileFormat> format, FileSystemDiscoveryOptions options);
+      std::shared_ptr<FileFormat> format, FileSystemManifestOptions options);
 
   Result<std::vector<std::shared_ptr<Schema>>> InspectSchemas() override;
 
   Result<std::shared_ptr<Source>> Finish(const std::shared_ptr<Schema>& schema) override;
 
  protected:
-  FileSystemSourceDiscovery(std::shared_ptr<fs::FileSystem> filesystem,
-                            fs::PathForest forest, std::shared_ptr<FileFormat> format,
-                            FileSystemDiscoveryOptions options);
+  FileSystemSourceManifest(std::shared_ptr<fs::FileSystem> filesystem,
+                           fs::PathForest forest, std::shared_ptr<FileFormat> format,
+                           FileSystemManifestOptions options);
 
   static Result<fs::PathForest> Filter(const std::shared_ptr<fs::FileSystem>& filesystem,
                                        const std::shared_ptr<FileFormat>& format,
-                                       const FileSystemDiscoveryOptions& options,
+                                       const FileSystemManifestOptions& options,
                                        fs::PathForest forest);
 
   Result<std::shared_ptr<Schema>> PartitionSchema();
@@ -184,7 +183,7 @@ class ARROW_DS_EXPORT FileSystemSourceDiscovery : public SourceDiscovery {
   std::shared_ptr<fs::FileSystem> fs_;
   fs::PathForest forest_;
   std::shared_ptr<FileFormat> format_;
-  FileSystemDiscoveryOptions options_;
+  FileSystemManifestOptions options_;
 };
 
 }  // namespace dataset

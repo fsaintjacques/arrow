@@ -340,24 +340,24 @@ csv___TableReader__Read <- function(table_reader){
     .Call(`_arrow_csv___TableReader__Read` , table_reader)
 }
 
-dataset___FSDSDiscovery__Make2 <- function(fs, selector, partition_scheme){
-    .Call(`_arrow_dataset___FSDSDiscovery__Make2` , fs, selector, partition_scheme)
+dataset___FSSManifest__Make2 <- function(fs, selector, partition_scheme){
+    .Call(`_arrow_dataset___FSSManifest__Make2` , fs, selector, partition_scheme)
 }
 
-dataset___FSDSDiscovery__Make1 <- function(fs, selector){
-    .Call(`_arrow_dataset___FSDSDiscovery__Make1` , fs, selector)
+dataset___FSSManifest__Make1 <- function(fs, selector){
+    .Call(`_arrow_dataset___FSSManifest__Make1` , fs, selector)
 }
 
-dataset___DSDiscovery__Finish1 <- function(discovery){
-    .Call(`_arrow_dataset___DSDiscovery__Finish1` , discovery)
+dataset___SManifest__Finish1 <- function(manifest){
+    .Call(`_arrow_dataset___SManifest__Finish1` , manifest)
 }
 
-dataset___DSDiscovery__Finish2 <- function(discovery, schema){
-    .Call(`_arrow_dataset___DSDiscovery__Finish2` , discovery, schema)
+dataset___SManifest__Finish2 <- function(manifest, schema){
+    .Call(`_arrow_dataset___SManifest__Finish2` , manifest, schema)
 }
 
-dataset___DSDiscovery__Inspect <- function(discovery){
-    .Call(`_arrow_dataset___DSDiscovery__Inspect` , discovery)
+dataset___SManifest__Inspect <- function(manifest){
+    .Call(`_arrow_dataset___SManifest__Inspect` , manifest)
 }
 
 dataset___SchemaPartitionScheme <- function(schm){

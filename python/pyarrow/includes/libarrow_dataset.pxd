@@ -290,7 +290,7 @@ cdef extern from "arrow/dataset/api.h" namespace "arrow::dataset" nogil:
         CResult[shared_ptr[CExpression]] Parse(const c_string& path) const
         const shared_ptr[CSchema]& schema()
 
-    cdef cppclass CPartitionSchemeDiscovery "arrow::dataset::PartitionSchemeDiscovery":
+    cdef cppclass CPartitionSchemeManifest "arrow::dataset::PartitionSchemeManifest":
         pass
 
     cdef cppclass CDefaultPartitionScheme \
@@ -305,23 +305,23 @@ cdef extern from "arrow/dataset/api.h" namespace "arrow::dataset" nogil:
             "arrow::dataset::HivePartitionScheme"(CPartitionScheme):
         CHivePartitionScheme(shared_ptr[CSchema] schema)
 
-    cdef cppclass CPartitionSchemeOrDiscovery \
-            "arrow::dataset::PartitionSchemeOrDiscovery":
-        CPartitionSchemeOrDiscovery(shared_ptr[CPartitionScheme])
-        CPartitionSchemeOrDiscovery(shared_ptr[CPartitionSchemeDiscovery])
-        CPartitionSchemeOrDiscovery& operator=(shared_ptr[CPartitionScheme])
-        CPartitionSchemeOrDiscovery& operator=(shared_ptr[CPartitionSchemeDiscovery])
+    cdef cppclass CPartitionSchemeOrManifest \
+            "arrow::dataset::PartitionSchemeOrManifest":
+        CPartitionSchemeOrManifest(shared_ptr[CPartitionScheme])
+        CPartitionSchemeOrManifest(shared_ptr[CPartitionSchemeManifest])
+        CPartitionSchemeOrManifest& operator=(shared_ptr[CPartitionScheme])
+        CPartitionSchemeOrManifest& operator=(shared_ptr[CPartitionSchemeManifest])
         shared_ptr[CPartitionScheme] scheme() const
-        shared_ptr[CPartitionSchemeDiscovery] discovery() const
+        shared_ptr[CPartitionSchemeManifest] manifest() const
 
-    cdef cppclass CFileSystemDiscoveryOptions \
-            "arrow::dataset::FileSystemDiscoveryOptions":
-        CPartitionSchemeOrDiscovery partition_scheme
+    cdef cppclass CFileSystemManifestOptions \
+            "arrow::dataset::FileSystemManifestOptions":
+        CPartitionSchemeOrManifest partition_scheme
         c_string partition_base_dir
         c_bool exclude_invalid_files
         vector[c_string] ignore_prefixes
 
-    cdef cppclass CSourceDiscovery "arrow::dataset::SourceDiscovery":
+    cdef cppclass CSourceManifest "arrow::dataset::SourceManifest":
         CResult[vector[shared_ptr[CSchema]]] InspectSchemas()
         CResult[shared_ptr[CSchema]] Inspect()
         CResult[shared_ptr[CSource]] Finish(shared_ptr[CSchema])
@@ -329,20 +329,20 @@ cdef extern from "arrow/dataset/api.h" namespace "arrow::dataset" nogil:
         shared_ptr[CExpression] root_partition()
         CStatus SetRootPartition(shared_ptr[CExpression] partition)
 
-    cdef cppclass CFileSystemSourceDiscovery \
-            "arrow::dataset::FileSystemSourceDiscovery"(
-                CSourceDiscovery):
+    cdef cppclass CFileSystemSourceManifest \
+            "arrow::dataset::FileSystemSourceManifest"(
+                CSourceManifest):
         @staticmethod
-        CResult[shared_ptr[CSourceDiscovery]] MakeFromPaths "Make"(
+        CResult[shared_ptr[CSourceManifest]] MakeFromPaths "Make"(
             shared_ptr[CFileSystem] filesystem,
             vector[c_string] paths,
             shared_ptr[CFileFormat] format,
-            CFileSystemDiscoveryOptions options
+            CFileSystemManifestOptions options
         )
         @staticmethod
-        CResult[shared_ptr[CSourceDiscovery]] MakeFromSelector "Make"(
+        CResult[shared_ptr[CSourceManifest]] MakeFromSelector "Make"(
             shared_ptr[CFileSystem] filesystem,
             CFileSelector,
             shared_ptr[CFileFormat] format,
-            CFileSystemDiscoveryOptions options
+            CFileSystemManifestOptions options
         )

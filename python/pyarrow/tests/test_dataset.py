@@ -66,17 +66,16 @@ def mockfs():
 def dataset(mockfs):
     format = ds.ParquetFileFormat()
     selector = fs.FileSelector('subdir', recursive=True)
-    options = ds.FileSystemDiscoveryOptions('subdir')
+    options = ds.FileSystemManifestOptions('subdir')
     options.partition_scheme = ds.SchemaPartitionScheme(
         pa.schema([
             pa.field('group', pa.int32()),
             pa.field('key', pa.string())
         ])
     )
-    discovery = ds.FileSystemSourceDiscovery(mockfs, selector, format,
-                                                 options)
-    schema = discovery.inspect()
-    source = discovery.finish()
+    manifest = ds.FileSystemSourceManifest(mockfs, selector, format, options)
+    schema = manifest.inspect()
+    source = manifest.finish()
     return ds.Dataset([source], schema)
 
 
@@ -87,8 +86,8 @@ def test_filesystem_data_source(mockfs):
     partitions = [ds.ScalarExpression(True), ds.ScalarExpression(True)]
 
     source = ds.FileSystemSource(mockfs, paths, partitions,
-                                     source_partition=None,
-                                     file_format=file_format)
+                                 source_partition=None,
+                                 file_format=file_format)
 
     source_partition = ds.ComparisonExpression(
         ds.CompareOperator.Equal,
@@ -108,8 +107,8 @@ def test_filesystem_data_source(mockfs):
         )
     ]
     source = ds.FileSystemSource(mockfs, paths, partitions,
-                                     source_partition=source_partition,
-                                     file_format=file_format)
+                                 source_partition=source_partition,
+                                 file_format=file_format)
     assert source.partition_expression.equals(source_partition)
 
 
@@ -303,10 +302,10 @@ def test_expression():
         'subdir/2/yyy/file1.parquet',
     ]
 ])
-def test_file_system_discovery(mockfs, paths_or_selector):
+def test_file_system_manifest(mockfs, paths_or_selector):
     format = ds.ParquetFileFormat()
 
-    options = ds.FileSystemDiscoveryOptions('subdir')
+    options = ds.FileSystemManifestOptions('subdir')
     options.partition_scheme = ds.SchemaPartitionScheme(
         pa.schema([
             pa.field('group', pa.int32()),
@@ -317,18 +316,18 @@ def test_file_system_discovery(mockfs, paths_or_selector):
     assert options.ignore_prefixes == ['.', '_']
     assert options.exclude_invalid_files is True
 
-    discovery = ds.FileSystemSourceDiscovery(
+    manifest = ds.FileSystemSourceManifest(
         mockfs, paths_or_selector, format, options
     )
-    inspected_schema = discovery.inspect()
+    inspected_schema = manifest.inspect()
 
-    assert isinstance(discovery.inspect(), pa.Schema)
-    assert isinstance(discovery.inspect_schemas(), list)
-    assert isinstance(discovery.finish(inspected_schema),
+    assert isinstance(manifest.inspect(), pa.Schema)
+    assert isinstance(manifest.inspect_schemas(), list)
+    assert isinstance(manifest.finish(inspected_schema),
                       ds.FileSystemSource)
-    assert discovery.root_partition.equals(ds.ScalarExpression(True))
+    assert manifest.root_partition.equals(ds.ScalarExpression(True))
 
-    data_source = discovery.finish()
+    data_source = manifest.finish()
     assert isinstance(data_source, ds.Source)
 
     dataset = ds.Dataset([data_source], inspected_schema)

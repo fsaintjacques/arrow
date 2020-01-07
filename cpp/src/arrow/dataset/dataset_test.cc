@@ -297,8 +297,8 @@ TEST_F(TestEndToEnd, EndToEndSingleSource) {
 
   // A Source is composed of Fragments. Each Fragment can yield
   // multiple RecordBatches. Sources can be created manually or "discovered"
-  // via the SourceDiscovery interface.
-  std::shared_ptr<SourceDiscovery> discovery;
+  // via the SourceManifest interface.
+  std::shared_ptr<SourceManifest> manifest;
 
   // The user must specify which FileFormat is used to create FileFragments.
   // This option is specific to FileSystemSource (and the builder).
@@ -307,16 +307,16 @@ TEST_F(TestEndToEnd, EndToEndSingleSource) {
 
   // A selector is used to crawl files and directories of a
   // filesystem. If the options in FileSelector are not enough, the
-  // FileSystemSourceDiscovery class also supports an explicit list of
+  // FileSystemSourceManifest class also supports an explicit list of
   // fs::FileStats instead of the selector.
   fs::FileSelector s;
   s.base_dir = "/dataset";
   s.recursive = true;
 
-  // Further options can be given to the discovery mechanism via the
-  // FileSystemDiscoveryOptions configuration class. See the docstring for more
+  // Further options can be given to the manifest mechanism via the
+  // FileSystemManifestOptions configuration class. See the docstring for more
   // information.
-  FileSystemDiscoveryOptions options;
+  FileSystemManifestOptions options;
   options.ignore_prefixes = {"."};
 
   // Partitions expressions can be discovered for Source and Fragments.
@@ -327,7 +327,7 @@ TEST_F(TestEndToEnd, EndToEndSingleSource) {
   // the directory separator character and the components are parsed as values
   // of the corresponding fields in its schema.
   //
-  // Since a PartitionSchemeDiscovery is specified instead of an explicit
+  // Since a PartitionSchemeManifest is specified instead of an explicit
   // PartitionScheme, the types of partition fields will be inferred.
   //
   // - "/2019" -> {"year": 2019}
@@ -335,20 +335,19 @@ TEST_F(TestEndToEnd, EndToEndSingleSource) {
   // - "/2019/01/CA -> {"year": 2019, "month": 1, "country": "CA"}
   // - "/2019/01/CA/a_file.json -> {"year": 2019, "month": 1, "country": "CA"}
   options.partition_scheme =
-      SchemaPartitionScheme::MakeDiscovery({"year", "month", "country"});
+      SchemaPartitionScheme::MakeManifest({"year", "month", "country"});
 
-  ASSERT_OK_AND_ASSIGN(discovery,
-                       FileSystemSourceDiscovery::Make(fs_, s, format, options));
+  ASSERT_OK_AND_ASSIGN(manifest, FileSystemSourceManifest::Make(fs_, s, format, options));
 
   // Fragments might have compatible but slightly different schemas, e.g.
   // schema evolved by adding/renaming columns. In this case, the schema is
   // passed to the dataset constructor.
   // The inspected_schema may optionally be modified before being finalized.
-  ASSERT_OK_AND_ASSIGN(auto inspected_schema, discovery->Inspect());
+  ASSERT_OK_AND_ASSIGN(auto inspected_schema, manifest->Inspect());
   EXPECT_EQ(*schema_, *inspected_schema);
 
   // Build the Source where partitions are attached to fragments (files).
-  ASSERT_OK_AND_ASSIGN(auto source, discovery->Finish(inspected_schema));
+  ASSERT_OK_AND_ASSIGN(auto source, manifest->Finish(inspected_schema));
 
   // Create the Dataset from our single Source.
   ASSERT_OK_AND_ASSIGN(auto dataset, Dataset::Make({source}, inspected_schema));
@@ -462,17 +461,17 @@ class TestSchemaUnification : public TestDataset {
 
       auto format = std::make_shared<JSONRecordBatchFileFormat>(resolver);
 
-      FileSystemDiscoveryOptions options;
+      FileSystemManifestOptions options;
       options.partition_base_dir = base;
       options.partition_scheme =
           std::make_shared<HivePartitionScheme>(SchemaFromNames({"part_ds", "part_df"}));
 
-      ARROW_ASSIGN_OR_RAISE(auto discovery,
-                            FileSystemSourceDiscovery::Make(fs_, paths, format, options));
+      ARROW_ASSIGN_OR_RAISE(auto manifest,
+                            FileSystemSourceManifest::Make(fs_, paths, format, options));
 
-      ARROW_ASSIGN_OR_RAISE(auto schema, discovery->Inspect());
+      ARROW_ASSIGN_OR_RAISE(auto schema, manifest->Inspect());
 
-      return discovery->Finish(schema);
+      return manifest->Finish(schema);
     };
 
     schema_ = SchemaFromNames({"phy_1", "phy_2", "phy_3", "phy_4", "part_ds", "part_df"});

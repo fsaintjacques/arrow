@@ -154,8 +154,8 @@ test_that("Assembling a Dataset manually and getting a Table", {
   selector <- FileSelector$create(dataset_dir, recursive = TRUE)
   partition <- SchemaPartitionScheme$create(schema(part = double()))
 
-  dsd <- FileSystemSourceDiscovery$create(fs, selector, partition_scheme = partition)
-  expect_is(dsd, "FileSystemSourceDiscovery")
+  dsd <- FileSystemSourceManifest$create(fs, selector, partition_scheme = partition)
+  expect_is(dsd, "FileSystemSourceManifest")
 
   schm <- dsd$Inspect()
   expect_is(schm, "Schema")

@@ -11,7 +11,7 @@
 PartitionScheme
 }
 \description{
-Pass a \code{PartitionScheme} to a \link{FileSystemSourceDiscovery}'s \code{$create()}
+Pass a \code{PartitionScheme} to a \link{FileSystemSourceManifest}'s \code{$create()}
 method to indicate how the file's paths should be interpreted to define
 partitioning.
 

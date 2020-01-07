@@ -84,11 +84,11 @@ class ARROW_DS_EXPORT PartitionScheme {
   std::shared_ptr<Schema> schema_;
 };
 
-/// \brief PartitionSchemeDiscovery provides creation of a partition scheme when the
+/// \brief PartitionSchemeManifest provides creation of a partition scheme when the
 /// specific schema must be inferred from available paths (no explicit schema is known).
-class ARROW_DS_EXPORT PartitionSchemeDiscovery {
+class ARROW_DS_EXPORT PartitionSchemeManifest {
  public:
-  virtual ~PartitionSchemeDiscovery() = default;
+  virtual ~PartitionSchemeManifest() = default;
 
   /// Get the schema for the resulting PartitionScheme.
   virtual Result<std::shared_ptr<Schema>> Inspect(
@@ -173,7 +173,7 @@ class ARROW_DS_EXPORT SchemaPartitionScheme : public PartitionKeysScheme {
 
   util::optional<Key> ParseKey(const std::string& segment, int i) const override;
 
-  static std::shared_ptr<PartitionSchemeDiscovery> MakeDiscovery(
+  static std::shared_ptr<PartitionSchemeManifest> MakeManifest(
       std::vector<std::string> field_names);
 };
 
@@ -199,7 +199,7 @@ class ARROW_DS_EXPORT HivePartitionScheme : public PartitionKeysScheme {
 
   static util::optional<Key> ParseKey(const std::string& segment);
 
-  static std::shared_ptr<PartitionSchemeDiscovery> MakeDiscovery();
+  static std::shared_ptr<PartitionSchemeManifest> MakeManifest();
 };
 
 /// \brief Implementation provided by lambda or other callable
@@ -227,23 +227,23 @@ class ARROW_DS_EXPORT FunctionPartitionScheme : public PartitionScheme {
 
 // TODO(bkietz) use RE2 and named groups to provide RegexpPartitionScheme
 
-/// \brief Either a PartitionScheme or a PartitionSchemeDiscovery
-class ARROW_DS_EXPORT PartitionSchemeOrDiscovery {
+/// \brief Either a PartitionScheme or a PartitionSchemeManifest
+class ARROW_DS_EXPORT PartitionSchemeOrManifest {
  public:
-  explicit PartitionSchemeOrDiscovery(std::shared_ptr<PartitionScheme> scheme)
+  explicit PartitionSchemeOrManifest(std::shared_ptr<PartitionScheme> scheme)
       : variant_(std::move(scheme)) {}
 
-  explicit PartitionSchemeOrDiscovery(std::shared_ptr<PartitionSchemeDiscovery> discovery)
-      : variant_(std::move(discovery)) {}
+  explicit PartitionSchemeOrManifest(std::shared_ptr<PartitionSchemeManifest> manifest)
+      : variant_(std::move(manifest)) {}
 
-  PartitionSchemeOrDiscovery& operator=(std::shared_ptr<PartitionScheme> scheme) {
+  PartitionSchemeOrManifest& operator=(std::shared_ptr<PartitionScheme> scheme) {
     variant_ = std::move(scheme);
     return *this;
   }
 
-  PartitionSchemeOrDiscovery& operator=(
-      std::shared_ptr<PartitionSchemeDiscovery> discovery) {
-    variant_ = std::move(discovery);
+  PartitionSchemeOrManifest& operator=(
+      std::shared_ptr<PartitionSchemeManifest> manifest) {
+    variant_ = std::move(manifest);
     return *this;
   }
 
@@ -254,15 +254,15 @@ class ARROW_DS_EXPORT PartitionSchemeOrDiscovery {
     return NULLPTR;
   }
 
-  std::shared_ptr<PartitionSchemeDiscovery> discovery() const {
-    if (util::holds_alternative<std::shared_ptr<PartitionSchemeDiscovery>>(variant_)) {
-      return util::get<std::shared_ptr<PartitionSchemeDiscovery>>(variant_);
+  std::shared_ptr<PartitionSchemeManifest> manifest() const {
+    if (util::holds_alternative<std::shared_ptr<PartitionSchemeManifest>>(variant_)) {
+      return util::get<std::shared_ptr<PartitionSchemeManifest>>(variant_);
     }
     return NULLPTR;
   }
 
  private:
-  util::variant<std::shared_ptr<PartitionSchemeDiscovery>,
+  util::variant<std::shared_ptr<PartitionSchemeManifest>,
                 std::shared_ptr<PartitionScheme>>
       variant_;
 };

@@ -20,7 +20,7 @@
 #if defined(ARROW_R_WITH_ARROW)
 
 // [[arrow::export]]
-std::shared_ptr<ds::SourceDiscovery> dataset___FSDSDiscovery__Make2(
+std::shared_ptr<ds::SourceManifest> dataset___FSSManifest__Make2(
     const std::shared_ptr<fs::FileSystem>& fs,
     const std::shared_ptr<fs::FileSelector>& selector,
     const std::shared_ptr<ds::PartitionScheme>& partition_scheme) {
@@ -28,39 +28,39 @@ std::shared_ptr<ds::SourceDiscovery> dataset___FSDSDiscovery__Make2(
   auto format = std::make_shared<ds::ParquetFileFormat>();
 
   // TODO(fsaintjacques): Make options configurable
-  auto options = ds::FileSystemDiscoveryOptions{};
+  auto options = ds::FileSystemManifestOptions{};
   if (partition_scheme != nullptr) {
     options.partition_scheme = partition_scheme;
   }
 
   return VALUE_OR_STOP(
-      ds::FileSystemSourceDiscovery::Make(fs, *selector, format, options));
+      ds::FileSystemSourceManifest::Make(fs, *selector, format, options));
 }
 
 // [[arrow::export]]
-std::shared_ptr<ds::SourceDiscovery> dataset___FSDSDiscovery__Make1(
+std::shared_ptr<ds::SourceManifest> dataset___FSSManifest__Make1(
     const std::shared_ptr<fs::FileSystem>& fs,
     const std::shared_ptr<fs::FileSelector>& selector) {
-  return dataset___FSDSDiscovery__Make2(fs, selector, nullptr);
+  return dataset___FSSManifest__Make2(fs, selector, nullptr);
 }
 
 // [[arrow::export]]
-std::shared_ptr<ds::Source> dataset___DSDiscovery__Finish1(
-    const std::shared_ptr<ds::SourceDiscovery>& discovery) {
-  return VALUE_OR_STOP(discovery->Finish());
+std::shared_ptr<ds::Source> dataset___SManifest__Finish1(
+    const std::shared_ptr<ds::SourceManifest>& manifest) {
+  return VALUE_OR_STOP(manifest->Finish());
 }
 
 // [[arrow::export]]
-std::shared_ptr<ds::Source> dataset___DSDiscovery__Finish2(
-    const std::shared_ptr<ds::SourceDiscovery>& discovery,
+std::shared_ptr<ds::Source> dataset___SManifest__Finish2(
+    const std::shared_ptr<ds::SourceManifest>& manifest,
     const std::shared_ptr<arrow::Schema>& schema) {
-  return VALUE_OR_STOP(discovery->Finish(schema));
+  return VALUE_OR_STOP(manifest->Finish(schema));
 }
 
 // [[arrow::export]]
-std::shared_ptr<arrow::Schema> dataset___DSDiscovery__Inspect(
-    const std::shared_ptr<ds::SourceDiscovery>& discovery) {
-  return VALUE_OR_STOP(discovery->Inspect());
+std::shared_ptr<arrow::Schema> dataset___SManifest__Inspect(
+    const std::shared_ptr<ds::SourceManifest>& manifest) {
+  return VALUE_OR_STOP(manifest->Inspect());
 }
 
 // [[arrow::export]]

@@ -55,9 +55,9 @@ class TestPartitionScheme : public ::testing::Test {
 
   void AssertInspect(const std::vector<util::string_view>& paths,
                      const std::vector<std::shared_ptr<Field>>& expected) {
-    ASSERT_OK_AND_ASSIGN(auto actual, discovery_->Inspect(paths));
+    ASSERT_OK_AND_ASSIGN(auto actual, manifest_->Inspect(paths));
     ASSERT_EQ(*actual, Schema(expected));
-    ASSERT_OK(discovery_->Finish(actual).status());
+    ASSERT_OK(manifest_->Finish(actual).status());
   }
 
  protected:
@@ -70,7 +70,7 @@ class TestPartitionScheme : public ::testing::Test {
   }
 
   std::shared_ptr<PartitionScheme> scheme_;
-  std::shared_ptr<PartitionSchemeDiscovery> discovery_;
+  std::shared_ptr<PartitionSchemeManifest> manifest_;
 };
 
 TEST_F(TestPartitionScheme, SegmentDictionary) {
@@ -118,7 +118,7 @@ TEST_F(TestPartitionScheme, Schema) {
 }
 
 TEST_F(TestPartitionScheme, DiscoverSchema) {
-  discovery_ = SchemaPartitionScheme::MakeDiscovery({"alpha", "beta"});
+  manifest_ = SchemaPartitionScheme::MakeManifest({"alpha", "beta"});
 
   // type is int32 if possible
   AssertInspect({"/0/1"}, {Int("alpha"), Int("beta")});
@@ -155,7 +155,7 @@ TEST_F(TestPartitionScheme, Hive) {
 }
 
 TEST_F(TestPartitionScheme, DiscoverHiveSchema) {
-  discovery_ = HivePartitionScheme::MakeDiscovery();
+  manifest_ = HivePartitionScheme::MakeManifest();
 
   // type is int32 if possible
   AssertInspect({"/alpha=0/beta=1"}, {Int("alpha"), Int("beta")});
