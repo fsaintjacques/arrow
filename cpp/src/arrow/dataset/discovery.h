@@ -55,7 +55,7 @@ namespace dataset {
 ///   return Dataset(sources, common_schema)
 class ARROW_DS_EXPORT DataSourceDiscovery {
  public:
-  /// \brief Get the schemas of the DataFragments and PartitionScheme.
+  /// \brief Get the schemas of the Fragments and PartitionScheme.
   virtual Result<std::vector<std::shared_ptr<Schema>>> InspectSchemas() = 0;
 
   /// \brief Get unified schema for the resulting DataSource.

@@ -59,8 +59,7 @@ class MockDataSourceDiscovery : public DataSourceDiscovery {
   }
 
   Result<std::shared_ptr<DataSource>> Finish(const std::shared_ptr<Schema>&) override {
-    return std::make_shared<SimpleDataSource>(
-        std::vector<std::shared_ptr<DataFragment>>{});
+    return std::make_shared<SimpleDataSource>(std::vector<std::shared_ptr<Fragment>>{});
   }
 
  protected:

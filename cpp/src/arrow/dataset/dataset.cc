@@ -29,15 +29,14 @@
 namespace arrow {
 namespace dataset {
 
-DataFragment::DataFragment(std::shared_ptr<ScanOptions> scan_options)
+Fragment::Fragment(std::shared_ptr<ScanOptions> scan_options)
     : scan_options_(std::move(scan_options)), partition_expression_(scalar(true)) {}
 
-SimpleDataFragment::SimpleDataFragment(
-    std::vector<std::shared_ptr<RecordBatch>> record_batches,
-    std::shared_ptr<ScanOptions> scan_options)
-    : DataFragment(std::move(scan_options)), record_batches_(std::move(record_batches)) {}
+SimpleFragment::SimpleFragment(std::vector<std::shared_ptr<RecordBatch>> record_batches,
+                               std::shared_ptr<ScanOptions> scan_options)
+    : Fragment(std::move(scan_options)), record_batches_(std::move(record_batches)) {}
 
-Result<ScanTaskIterator> SimpleDataFragment::Scan(std::shared_ptr<ScanContext> context) {
+Result<ScanTaskIterator> SimpleFragment::Scan(std::shared_ptr<ScanContext> context) {
   // Make an explicit copy of record_batches_ to ensure Scan can be called
   // multiple times.
   auto batches_it = MakeVectorIterator(record_batches_);
@@ -91,21 +90,20 @@ bool DataSource::AssumePartitionExpression(
   return true;
 }
 
-DataFragmentIterator DataSource::GetFragments(std::shared_ptr<ScanOptions> scan_options) {
+FragmentIterator DataSource::GetFragments(std::shared_ptr<ScanOptions> scan_options) {
   std::shared_ptr<ScanOptions> simplified_scan_options;
   if (!AssumePartitionExpression(scan_options, &simplified_scan_options)) {
-    return MakeEmptyIterator<std::shared_ptr<DataFragment>>();
+    return MakeEmptyIterator<std::shared_ptr<Fragment>>();
   }
   return GetFragmentsImpl(std::move(simplified_scan_options));
 }
 
-DataFragmentIterator SimpleDataSource::GetFragmentsImpl(
+FragmentIterator SimpleDataSource::GetFragmentsImpl(
     std::shared_ptr<ScanOptions> scan_options) {
   return MakeVectorIterator(fragments_);
 }
 
-DataFragmentIterator TreeDataSource::GetFragmentsImpl(
-    std::shared_ptr<ScanOptions> options) {
+FragmentIterator TreeDataSource::GetFragmentsImpl(std::shared_ptr<ScanOptions> options) {
   return GetFragmentsFromSources(children_, options);
 }
 

@@ -39,7 +39,7 @@ Result<std::shared_ptr<arrow::io::RandomAccessFile>> FileSource::Open() const {
   return std::make_shared<::arrow::io::BufferReader>(buffer());
 }
 
-Result<ScanTaskIterator> FileDataFragment::Scan(std::shared_ptr<ScanContext> context) {
+Result<ScanTaskIterator> FileFragment::Scan(std::shared_ptr<ScanContext> context) {
   return format_->ScanFile(source_, scan_options_, context);
 }
 
@@ -128,9 +128,9 @@ util::optional<std::pair<std::string, std::shared_ptr<Scalar>>> GetKey(
       internal::checked_cast<const ScalarExpression&>(*cmp.right_operand()).value());
 }
 
-DataFragmentIterator FileSystemDataSource::GetFragmentsImpl(
+FragmentIterator FileSystemDataSource::GetFragmentsImpl(
     std::shared_ptr<ScanOptions> root_options) {
-  DataFragmentVector fragments;
+  FragmentVector fragments;
   std::vector<std::shared_ptr<ScanOptions>> options(forest_.size());
 
   auto collect_fragments = [&](fs::PathForest::Ref ref) -> fs::PathForest::MaybePrune {
@@ -174,7 +174,7 @@ DataFragmentIterator FileSystemDataSource::GetFragmentsImpl(
 
   auto status = forest_.Visit(collect_fragments);
   if (!status.ok()) {
-    return MakeErrorIterator<std::shared_ptr<DataFragment>>(status);
+    return MakeErrorIterator<std::shared_ptr<Fragment>>(status);
   }
 
   return MakeVectorIterator(std::move(fragments));

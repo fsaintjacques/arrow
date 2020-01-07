@@ -146,18 +146,16 @@ class ARROW_DS_EXPORT FileFormat {
       std::shared_ptr<ScanContext> context) const = 0;
 
   /// \brief Open a fragment
-  virtual Result<std::shared_ptr<DataFragment>> MakeFragment(
+  virtual Result<std::shared_ptr<Fragment>> MakeFragment(
       const FileSource& location, std::shared_ptr<ScanOptions> options) = 0;
 };
 
-/// \brief A DataFragment that is stored in a file with a known format
-class ARROW_DS_EXPORT FileDataFragment : public DataFragment {
+/// \brief A Fragment that is stored in a file with a known format
+class ARROW_DS_EXPORT FileFragment : public Fragment {
  public:
-  FileDataFragment(const FileSource& source, std::shared_ptr<FileFormat> format,
-                   std::shared_ptr<ScanOptions> scan_options)
-      : DataFragment(std::move(scan_options)),
-        source_(source),
-        format_(std::move(format)) {}
+  FileFragment(const FileSource& source, std::shared_ptr<FileFormat> format,
+               std::shared_ptr<ScanOptions> scan_options)
+      : Fragment(std::move(scan_options)), source_(source), format_(std::move(format)) {}
 
   Result<ScanTaskIterator> Scan(std::shared_ptr<ScanContext> context) override;
 
@@ -169,7 +167,7 @@ class ARROW_DS_EXPORT FileDataFragment : public DataFragment {
   std::shared_ptr<FileFormat> format_;
 };
 
-/// \brief A DataSource of FileDataFragments.
+/// \brief A DataSource of FileFragments.
 class ARROW_DS_EXPORT FileSystemDataSource : public DataSource {
  public:
   /// \brief Create a FileSystemDataSource.
@@ -223,7 +221,7 @@ class ARROW_DS_EXPORT FileSystemDataSource : public DataSource {
   std::string ToString() const;
 
  protected:
-  DataFragmentIterator GetFragmentsImpl(std::shared_ptr<ScanOptions> options) override;
+  FragmentIterator GetFragmentsImpl(std::shared_ptr<ScanOptions> options) override;
 
   FileSystemDataSource(std::shared_ptr<fs::FileSystem> filesystem, fs::PathForest forest,
                        ExpressionVector file_partitions,

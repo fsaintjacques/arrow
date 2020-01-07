@@ -29,15 +29,14 @@
 namespace arrow {
 namespace dataset {
 
-/// \brief A granular piece of a Dataset, such as an individual file,
-/// which can be read/scanned separately from other fragments.
+/// \brief A granular piece of a Dataset, such as an individual file, which can be
+/// read/scanned separately from other fragments.
 ///
-/// A DataFragment yields a collection of RecordBatch, encapsulated in one or
-/// more ScanTasks.
-class ARROW_DS_EXPORT DataFragment {
+/// A Fragment yields a collection of RecordBatch, encapsulated in one or more ScanTasks.
+class ARROW_DS_EXPORT Fragment {
  public:
   /// \brief Scan returns an iterator of ScanTasks, each of which yields
-  /// RecordBatches from this DataFragment.
+  /// RecordBatches from this Fragment.
   virtual Result<ScanTaskIterator> Scan(std::shared_ptr<ScanContext> context) = 0;
 
   /// \brief Return true if the fragment can benefit from parallel
@@ -50,19 +49,19 @@ class ARROW_DS_EXPORT DataFragment {
   /// scanned.
   std::shared_ptr<ScanOptions> scan_options() const { return scan_options_; }
 
-  virtual ~DataFragment() = default;
+  virtual ~Fragment() = default;
 
   /// \brief An expression which evaluates to true for all data viewed by this
-  /// DataFragment. May be null, which indicates no information is available.
+  /// Fragment. May be null, which indicates no information is available.
   const std::shared_ptr<Expression>& partition_expression() const {
     return partition_expression_;
   }
 
  protected:
-  explicit DataFragment(std::shared_ptr<ScanOptions> scan_options);
+  explicit Fragment(std::shared_ptr<ScanOptions> scan_options);
 
-  DataFragment(std::shared_ptr<ScanOptions> scan_options,
-               std::shared_ptr<Expression> partition_expression)
+  Fragment(std::shared_ptr<ScanOptions> scan_options,
+           std::shared_ptr<Expression> partition_expression)
       : scan_options_(std::move(scan_options)),
         partition_expression_(std::move(partition_expression)) {}
 
@@ -70,12 +69,12 @@ class ARROW_DS_EXPORT DataFragment {
   std::shared_ptr<Expression> partition_expression_;
 };
 
-/// \brief A trivial DataFragment that yields ScanTask out of a fixed set of
+/// \brief A trivial Fragment that yields ScanTask out of a fixed set of
 /// RecordBatch.
-class ARROW_DS_EXPORT SimpleDataFragment : public DataFragment {
+class ARROW_DS_EXPORT SimpleFragment : public Fragment {
  public:
-  SimpleDataFragment(std::vector<std::shared_ptr<RecordBatch>> record_batches,
-                     std::shared_ptr<ScanOptions> scan_options);
+  SimpleFragment(std::vector<std::shared_ptr<RecordBatch>> record_batches,
+                 std::shared_ptr<ScanOptions> scan_options);
 
   Result<ScanTaskIterator> Scan(std::shared_ptr<ScanContext> context) override;
 
@@ -86,13 +85,13 @@ class ARROW_DS_EXPORT SimpleDataFragment : public DataFragment {
 };
 
 /// \brief A basic component of a Dataset which yields zero or more
-/// DataFragments. A DataSource acts as a discovery mechanism of DataFragments
+/// Fragments. A DataSource acts as a discovery mechanism of Fragments
 /// and partitions, e.g. files deeply nested in a directory.
 class ARROW_DS_EXPORT DataSource {
  public:
-  /// \brief GetFragments returns an iterator of DataFragments. The ScanOptions
+  /// \brief GetFragments returns an iterator of Fragments. The ScanOptions
   /// controls filtering and schema inference.
-  DataFragmentIterator GetFragments(std::shared_ptr<ScanOptions> options);
+  FragmentIterator GetFragments(std::shared_ptr<ScanOptions> options);
 
   /// \brief An expression which evaluates to true for all data viewed by this DataSource.
   /// May be null, which indicates no information is available.
@@ -110,7 +109,7 @@ class ARROW_DS_EXPORT DataSource {
   explicit DataSource(std::shared_ptr<Expression> c)
       : partition_expression_(std::move(c)) {}
 
-  virtual DataFragmentIterator GetFragmentsImpl(std::shared_ptr<ScanOptions> options) = 0;
+  virtual FragmentIterator GetFragmentsImpl(std::shared_ptr<ScanOptions> options) = 0;
 
   /// Mutates a ScanOptions by assuming partition_expression_ holds for all yielded
   /// fragments. Returns false if the selector is not satisfiable in this DataSource.
@@ -121,18 +120,18 @@ class ARROW_DS_EXPORT DataSource {
   std::shared_ptr<Expression> partition_expression_;
 };
 
-/// \brief A DataSource consisting of a flat sequence of DataFragments
+/// \brief A DataSource consisting of a flat sequence of Fragments
 class ARROW_DS_EXPORT SimpleDataSource : public DataSource {
  public:
-  explicit SimpleDataSource(DataFragmentVector fragments)
+  explicit SimpleDataSource(FragmentVector fragments)
       : fragments_(std::move(fragments)) {}
 
-  DataFragmentIterator GetFragmentsImpl(std::shared_ptr<ScanOptions> options) override;
+  FragmentIterator GetFragmentsImpl(std::shared_ptr<ScanOptions> options) override;
 
   std::string type_name() const override { return "simple"; }
 
  private:
-  DataFragmentVector fragments_;
+  FragmentVector fragments_;
 };
 
 /// \brief A recursive DataSource with child DataSources.
@@ -140,7 +139,7 @@ class ARROW_DS_EXPORT TreeDataSource : public DataSource {
  public:
   explicit TreeDataSource(DataSourceVector children) : children_(std::move(children)) {}
 
-  DataFragmentIterator GetFragmentsImpl(std::shared_ptr<ScanOptions> options) override;
+  FragmentIterator GetFragmentsImpl(std::shared_ptr<ScanOptions> options) override;
 
   std::string type_name() const override { return "tree"; }
 

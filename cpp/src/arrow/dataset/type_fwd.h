@@ -44,9 +44,9 @@ namespace dataset {
 
 class Dataset;
 
-class DataFragment;
-using DataFragmentIterator = Iterator<std::shared_ptr<DataFragment>>;
-using DataFragmentVector = std::vector<std::shared_ptr<DataFragment>>;
+class Fragment;
+using FragmentIterator = Iterator<std::shared_ptr<Fragment>>;
+using FragmentVector = std::vector<std::shared_ptr<Fragment>>;
 
 class DataSource;
 using DataSourceVector = std::vector<std::shared_ptr<DataSource>>;

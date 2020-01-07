@@ -65,12 +65,12 @@ Result<RecordBatchIterator> SimpleScanTask::Execute() {
   return MakeVectorIterator(record_batches_);
 }
 
-/// \brief GetScanTaskIterator transforms an Iterator<DataFragment> in a
+/// \brief GetScanTaskIterator transforms an Iterator<Fragment> in a
 /// flattened Iterator<ScanTask>.
-static ScanTaskIterator GetScanTaskIterator(DataFragmentIterator fragments,
+static ScanTaskIterator GetScanTaskIterator(FragmentIterator fragments,
                                             std::shared_ptr<ScanContext> context) {
-  // DataFragment -> ScanTaskIterator
-  auto fn = [context](std::shared_ptr<DataFragment> fragment) {
+  // Fragment -> ScanTaskIterator
+  auto fn = [context](std::shared_ptr<Fragment> fragment) {
     return fragment->Scan(context);
   };
 
@@ -82,11 +82,11 @@ static ScanTaskIterator GetScanTaskIterator(DataFragmentIterator fragments,
 }
 
 Result<ScanTaskIterator> Scanner::Scan() {
-  // First, transforms DataSources in a flat Iterator<DataFragment>. This
+  // First, transforms DataSources in a flat Iterator<Fragment>. This
   // iterator is lazily constructed, i.e. DataSource::GetFragments is never
   // invoked.
   auto fragments_it = GetFragmentsFromSources(sources_, options_);
-  // Second, transforms Iterator<DataFragment> into a unified
+  // Second, transforms Iterator<Fragment> into a unified
   // Iterator<ScanTask>. The first Iterator::Next invocation is going to do
   // all the work of unwinding the chained iterators.
   auto scan_task_it = GetScanTaskIterator(std::move(fragments_it), context_);

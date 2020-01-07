@@ -31,9 +31,9 @@
 namespace arrow {
 namespace dataset {
 
-class TestSimpleDataFragment : public DatasetFixtureMixin {};
+class TestSimpleFragment : public DatasetFixtureMixin {};
 
-TEST_F(TestSimpleDataFragment, Scan) {
+TEST_F(TestSimpleFragment, Scan) {
   constexpr int64_t kBatchSize = 1024;
   constexpr int64_t kNumberBatches = 16;
 
@@ -41,8 +41,8 @@ TEST_F(TestSimpleDataFragment, Scan) {
   auto batch = ConstantArrayGenerator::Zeroes(kBatchSize, schema_);
   auto reader = ConstantArrayGenerator::Repeat(kNumberBatches, batch);
 
-  // Creates a SimpleDataFragment of the same repeated batch.
-  auto fragment = SimpleDataFragment({kNumberBatches, batch}, options_);
+  // Creates a SimpleFragment of the same repeated batch.
+  auto fragment = SimpleFragment({kNumberBatches, batch}, options_);
 
   AssertFragmentEquals(reader.get(), &fragment);
 }
@@ -59,7 +59,7 @@ TEST_F(TestSimpleDataSource, GetFragments) {
   auto reader = ConstantArrayGenerator::Repeat(kNumberBatches * kNumberFragments, batch);
 
   std::vector<std::shared_ptr<RecordBatch>> batches{kNumberBatches, batch};
-  auto fragment = std::make_shared<SimpleDataFragment>(batches, options_);
+  auto fragment = std::make_shared<SimpleFragment>(batches, options_);
   // It is safe to copy fragment multiple time since Scan() does not consume
   // the internal array.
   auto source = SimpleDataSource({kNumberFragments, fragment});
@@ -82,13 +82,13 @@ TEST_F(TestTreeDataSource, GetFragments) {
   auto reader = ConstantArrayGenerator::Repeat(kNumberBatches * n_leaves, batch);
 
   std::vector<std::shared_ptr<RecordBatch>> batches{kNumberBatches, batch};
-  auto fragment = std::make_shared<SimpleDataFragment>(batches, options_);
+  auto fragment = std::make_shared<SimpleFragment>(batches, options_);
 
   // Creates a complete binary tree of depth kCompleteBinaryTreeDepth where the
   // leaves are SimpleDataSource containing kChildPerNode fragments.
 
   auto l1_leaf_source =
-      std::make_shared<SimpleDataSource>(DataFragmentVector{kChildPerNode, fragment});
+      std::make_shared<SimpleDataSource>(FragmentVector{kChildPerNode, fragment});
 
   auto l2_leaf_tree_source =
       std::make_shared<TreeDataSource>(DataSourceVector{kChildPerNode, l1_leaf_source});
@@ -113,8 +113,8 @@ TEST_F(TestDataset, TrivialScan) {
   auto batch = ConstantArrayGenerator::Zeroes(kBatchSize, schema_);
 
   std::vector<std::shared_ptr<RecordBatch>> batches{kNumberBatches, batch};
-  auto fragment = std::make_shared<SimpleDataFragment>(batches, options_);
-  DataFragmentVector fragments{kNumberFragments, fragment};
+  auto fragment = std::make_shared<SimpleFragment>(batches, options_);
+  FragmentVector fragments{kNumberFragments, fragment};
 
   DataSourceVector sources = {
       std::make_shared<SimpleDataSource>(fragments),
@@ -295,7 +295,7 @@ TEST_F(TestEndToEnd, EndToEndSingleSource) {
   // Example of DataSource, FileSystemDataSource, OdbcDataSource,
   // FlightDataSource.
 
-  // A DataSource is composed of DataFragments. Each DataFragment can yield
+  // A DataSource is composed of Fragments. Each Fragment can yield
   // multiple RecordBatches. DataSources can be created manually or "discovered"
   // via the DataSourceDiscovery interface.
   std::shared_ptr<DataSourceDiscovery> discovery;
@@ -319,7 +319,7 @@ TEST_F(TestEndToEnd, EndToEndSingleSource) {
   FileSystemDiscoveryOptions options;
   options.ignore_prefixes = {"."};
 
-  // Partitions expressions can be discovered for DataSource and DataFragments.
+  // Partitions expressions can be discovered for DataSource and Fragments.
   // This metadata is then used in conjuction with the query filter to apply
   // the pushdown predicate optimization.
   //
@@ -340,7 +340,7 @@ TEST_F(TestEndToEnd, EndToEndSingleSource) {
   ASSERT_OK_AND_ASSIGN(discovery,
                        FileSystemDataSourceDiscovery::Make(fs_, s, format, options));
 
-  // DataFragments might have compatible but slightly different schemas, e.g.
+  // Fragments might have compatible but slightly different schemas, e.g.
   // schema evolved by adding/renaming columns. In this case, the schema is
   // passed to the dataset constructor.
   // The inspected_schema may optionally be modified before being finalized.
@@ -362,16 +362,16 @@ TEST_F(TestEndToEnd, EndToEndSingleSource) {
   ASSERT_OK_AND_ASSIGN(auto scanner_builder, dataset->NewScan());
 
   // An optional subset of columns can be provided. This will trickle to
-  // DataFragment drivers. The net effect is that only columns of interest will
-  // be materialized if the DataFragment supports it. This is the major benefit
+  // Fragment drivers. The net effect is that only columns of interest will
+  // be materialized if the Fragment supports it. This is the major benefit
   // of using a column-major format versus a row-major format.
   //
-  // This API decouples the DataSource/DataFragment implementation and column
+  // This API decouples the DataSource/Fragment implementation and column
   // projection from the query part.
   //
-  // For example, a ParquetFileDataFragment may read the necessary byte ranges
-  // exclusively, ranges, or an OdbcDataFragment could convert the projection to a SELECT
-  // statement. The CsvFileDataFragment wouldn't benefit from this as much, but
+  // For example, a ParquetFileFragment may read the necessary byte ranges
+  // exclusively, ranges, or an OdbcFragment could convert the projection to a SELECT
+  // statement. The CsvFileFragment wouldn't benefit from this as much, but
   // can still benefit from skipping conversion of unneeded columns.
   std::vector<std::string> columns{"sales", "model", "country"};
   ASSERT_OK(scanner_builder->Project(columns));
@@ -523,7 +523,7 @@ TEST_F(TestSchemaUnification, SelectStar) {
   // This is a `SELECT * FROM dataset` where it ensures:
   //
   // - proper re-ordering of columns
-  // - materializing missing physical columns in DataFragments
+  // - materializing missing physical columns in Fragments
   // - materializing missing partition columns extracted from PartitionScheme
   ASSERT_OK_AND_ASSIGN(auto scan_builder, dataset_->NewScan());
 
@@ -555,7 +555,7 @@ TEST_F(TestSchemaUnification, SelectPhysicalColumns) {
 }
 
 TEST_F(TestSchemaUnification, SelectSomeReorderedPhysicalColumns) {
-  // Select physical columns in a different order than physical DataFragments
+  // Select physical columns in a different order than physical Fragments
   ASSERT_OK_AND_ASSIGN(auto scan_builder, dataset_->NewScan());
   ASSERT_OK(scan_builder->Project({"phy_2", "phy_1", "phy_4"}));
 
@@ -594,7 +594,7 @@ TEST_F(TestSchemaUnification, SelectPartitionColumns) {
   // Selects partition (virtual) columns, it ensures:
   //
   // - virtual column are materialized
-  // - DataFragment yield the right number of rows even if no column is selected
+  // - Fragment yield the right number of rows even if no column is selected
   ASSERT_OK_AND_ASSIGN(auto scan_builder, dataset_->NewScan());
   ASSERT_OK(scan_builder->Project({"part_ds", "part_df"}));
   using TupleType = std::tuple<i32, i32>;

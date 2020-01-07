@@ -93,7 +93,7 @@ names.Dataset <- function(x) names(x$schema)
 #'
 #' @description
 #' A [Dataset] can have one or more `DataSource`s. A `DataSource` contains one
-#' or more `DataFragments`, such as files, of a common type and partition
+#' or more `Fragments`, such as files, of a common type and partition
 #' scheme. `DataSourceDiscovery` is used to create a `DataSource`, inspect the
 #' [Schema] of the fragments contained in it, and declare a partition scheme.
 #' `FileSystemDataSourceDiscovery` is a subclass of `DataSourceDiscovery` for
@@ -203,7 +203,7 @@ FileSystemDataSourceDiscovery$create <- function(filesystem,
 #' Scan the contents of a dataset
 #'
 #' @description
-#' A `Scanner` iterates over a [Dataset]'s data fragments and returns data
+#' A `Scanner` iterates over a [Dataset]'s fragments and returns data
 #' according to given row filtering and column projection. Use a
 #' `ScannerBuilder`, from a `Dataset`'s `$NewScan()` method, to construct one.
 #'

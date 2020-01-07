@@ -86,7 +86,7 @@ class ARROW_DS_EXPORT ScanOptions {
   // used in the final projection but is still required to evaluate the
   // expression.
   //
-  // This is used by DataFragments implementation to apply the column
+  // This is used by Fragments implementation to apply the column
   // sub-selection optimization.
   std::vector<std::string> MaterializedFields() const;
 
@@ -137,7 +137,7 @@ Result<ScanTaskIterator> ScanTaskIteratorFromRecordBatch(
     std::shared_ptr<ScanOptions> options, std::shared_ptr<ScanContext>);
 
 /// \brief Scanner is a materialized scan operation with context and options
-/// bound. A scanner is the class that glues ScanTask, DataFragment,
+/// bound. A scanner is the class that glues ScanTask, Fragment,
 /// and DataSource. In python pseudo code, it performs the following:
 ///
 ///  def Scan():
@@ -184,7 +184,7 @@ class ARROW_DS_EXPORT ScannerBuilder {
 
   /// \brief Set the subset of columns to materialize.
   ///
-  /// This subset will be passed down to DataSources and corresponding DataFragments.
+  /// This subset will be passed down to DataSources and corresponding Fragments.
   /// The goal is to avoid loading/copying/deserializing columns that will
   /// not be required further down the compute chain.
   ///
@@ -198,8 +198,8 @@ class ARROW_DS_EXPORT ScannerBuilder {
   /// \brief Set the filter expression to return only rows matching the filter.
   ///
   /// The predicate will be passed down to DataSources and corresponding
-  /// DataFragments to exploit predicate pushdown if possible using
-  /// partition information or DataFragment internal metadata, e.g. Parquet statistics.
+  /// Fragments to exploit predicate pushdown if possible using
+  /// partition information or Fragment internal metadata, e.g. Parquet statistics.
   ///
   /// \param[in] filter expression to filter rows with.
   ///

@@ -37,8 +37,8 @@ class TestScanner : public DatasetFixtureMixin {
   Scanner MakeScanner(std::shared_ptr<RecordBatch> batch) {
     std::vector<std::shared_ptr<RecordBatch>> batches{kNumberBatches, batch};
 
-    DataFragmentVector fragments{kNumberFragments,
-                                 std::make_shared<SimpleDataFragment>(batches, options_)};
+    FragmentVector fragments{kNumberFragments,
+                             std::make_shared<SimpleFragment>(batches, options_)};
 
     DataSourceVector sources{kNumberSources,
                              std::make_shared<SimpleDataSource>(fragments)};
