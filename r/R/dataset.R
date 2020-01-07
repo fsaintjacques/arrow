@@ -27,7 +27,7 @@
 #'    for file paths like "2019/01/file.parquet", "2019/02/file.parquet", etc.
 #'   * A `HivePartitionScheme`, as returned by [hive_partition()]
 #'   * `NULL`, the default, for no partitioning
-#' @param ... additional arguments passed to `DataSourceDiscovery$create()`
+#' @param ... additional arguments passed to `SourceDiscovery$create()`
 #' @return A [Dataset] R6 object. Use `dplyr` methods on it to query the data,
 #' or call `$NewScan()` to construct a query directly.
 #' @export
@@ -41,7 +41,7 @@ open_dataset <- function (path, schema = NULL, partition = NULL, ...) {
     }
     assert_is(partition, "PartitionScheme")
   }
-  dsd <- DataSourceDiscovery$create(path, partition_scheme = partition, ...)
+  dsd <- SourceDiscovery$create(path, partition_scheme = partition, ...)
   if (is.null(schema)) {
     schema <- dsd$Inspect()
   }
@@ -58,7 +58,7 @@ open_dataset <- function (path, schema = NULL, partition = NULL, ...) {
 #' @section Factory:
 #' The `Dataset$create()` factory method instantiates a `Dataset` and
 #' takes the following arguments:
-#' * `sources`: a list of [DataSource] objects
+#' * `sources`: a list of [Source] objects
 #' * `schema`: a [Schema]
 #' @section Methods:
 #'
@@ -66,7 +66,7 @@ open_dataset <- function (path, schema = NULL, partition = NULL, ...) {
 #' - `$schema`: Active binding, returns the [Schema] of the Dataset
 #' @export
 #' @seealso [open_dataset()] for a simple way to create a Dataset that has a
-#' single `DataSource`.
+#' single `Source`.
 Dataset <- R6Class("Dataset", inherit = Object,
   public = list(
     #' @description
@@ -81,7 +81,7 @@ Dataset <- R6Class("Dataset", inherit = Object,
   )
 )
 Dataset$create <- function(sources, schema) {
-  assert_is_list_of(sources, "DataSource")
+  assert_is_list_of(sources, "Source")
   assert_is(schema, "Schema")
   shared_ptr(Dataset, dataset___Dataset__create(sources, schema))
 }
@@ -92,16 +92,16 @@ names.Dataset <- function(x) names(x$schema)
 #' Data sources for a Dataset
 #'
 #' @description
-#' A [Dataset] can have one or more `DataSource`s. A `DataSource` contains one
+#' A [Dataset] can have one or more `Source`s. A `Source` contains one
 #' or more `Fragments`, such as files, of a common type and partition
-#' scheme. `DataSourceDiscovery` is used to create a `DataSource`, inspect the
+#' scheme. `SourceDiscovery` is used to create a `Source`, inspect the
 #' [Schema] of the fragments contained in it, and declare a partition scheme.
-#' `FileSystemDataSourceDiscovery` is a subclass of `DataSourceDiscovery` for
+#' `FileSystemSourceDiscovery` is a subclass of `SourceDiscovery` for
 #' discovering files in the local file system, the only currently supported
 #' file system.
 #' @section Factory:
-#' The `DataSourceDiscovery$create()` factory method instantiates a
-#' `DataSourceDiscovery` and takes the following arguments:
+#' The `SourceDiscovery$create()` factory method instantiates a
+#' `SourceDiscovery` and takes the following arguments:
 #' * `path`: A string file path containing data files
 #' * `filesystem`: Currently only "local" is supported
 #' * `format`: Currently only "parquet" is supported
@@ -111,41 +111,41 @@ names.Dataset <- function(x) names(x$schema)
 #' * `path`? Default `TRUE`.
 #' * `...` Additional arguments passed to the [FileSystem] `$create()` method
 #'
-#' `FileSystemDataSourceDiscovery$create()` is a lower-level factory method and
+#' `FileSystemSourceDiscovery$create()` is a lower-level factory method and
 #' takes the following arguments:
 #' * `filesystem`: A [FileSystem]
 #' * `selector`: A [FileSelector]
 #' * `format`: Currently only "parquet" is supported
 #' @section Methods:
-#' `DataSource` has no defined methods. It is just passed to `Dataset$create()`.
+#' `Source` has no defined methods. It is just passed to `Dataset$create()`.
 #'
-#' `DataSourceDiscovery` and its subclasses have the following methods:
+#' `SourceDiscovery` and its subclasses have the following methods:
 #'
 #' - `$Inspect()`: Walks the files in the directory and returns a common [Schema]
-#' - `$Finish(schema)`: Returns a `DataSource`
-#' @rdname DataSource
-#' @name DataSource
-#' @seealso [Dataset] for what do do with a `DataSource`
+#' - `$Finish(schema)`: Returns a `Source`
+#' @rdname Source
+#' @name Source
+#' @seealso [Dataset] for what do do with a `Source`
 #' @export
-DataSource <- R6Class("DataSource", inherit = Object)
+Source <- R6Class("Source", inherit = Object)
 
 #' @usage NULL
 #' @format NULL
-#' @rdname DataSource
+#' @rdname Source
 #' @export
-DataSourceDiscovery <- R6Class("DataSourceDiscovery", inherit = Object,
+SourceDiscovery <- R6Class("SourceDiscovery", inherit = Object,
   public = list(
     Finish = function(schema = NULL) {
       if (is.null(schema)) {
-        shared_ptr(DataSource, dataset___DSDiscovery__Finish1(self))
+        shared_ptr(Source, dataset___DSDiscovery__Finish1(self))
       } else {
-        shared_ptr(DataSource, dataset___DSDiscovery__Finish2(self, schema))
+        shared_ptr(Source, dataset___DSDiscovery__Finish2(self, schema))
       }
     },
     Inspect = function() shared_ptr(Schema, dataset___DSDiscovery__Inspect(self))
   )
 )
-DataSourceDiscovery$create <- function(path,
+SourceDiscovery$create <- function(path,
                                        filesystem = c("auto", "local"),
                                        format = c("parquet"),
                                        allow_non_existent = FALSE,
@@ -169,17 +169,17 @@ DataSourceDiscovery$create <- function(path,
     recursive = recursive
   )
   # This may also require different initializers
-  FileSystemDataSourceDiscovery$create(filesystem, selector, format, partition_scheme)
+  FileSystemSourceDiscovery$create(filesystem, selector, format, partition_scheme)
 }
 
 #' @usage NULL
 #' @format NULL
-#' @rdname DataSource
+#' @rdname Source
 #' @export
-FileSystemDataSourceDiscovery <- R6Class("FileSystemDataSourceDiscovery",
-  inherit = DataSourceDiscovery
+FileSystemSourceDiscovery <- R6Class("FileSystemSourceDiscovery",
+  inherit = SourceDiscovery
 )
-FileSystemDataSourceDiscovery$create <- function(filesystem,
+FileSystemSourceDiscovery$create <- function(filesystem,
                                                  selector,
                                                  format = "parquet",
                                                  partition_scheme = NULL) {
@@ -188,13 +188,13 @@ FileSystemDataSourceDiscovery$create <- function(filesystem,
   format <- match.arg(format) # Only parquet for now
   if (is.null(partition_scheme)) {
     shared_ptr(
-      FileSystemDataSourceDiscovery,
+      FileSystemSourceDiscovery,
       dataset___FSDSDiscovery__Make1(filesystem, selector)
     )
   } else {
     assert_is(partition_scheme, "PartitionScheme")
     shared_ptr(
-      FileSystemDataSourceDiscovery,
+      FileSystemSourceDiscovery,
       dataset___FSDSDiscovery__Make2(filesystem, selector, partition_scheme)
     )
   }
@@ -260,10 +260,10 @@ ScannerBuilder <- R6Class("ScannerBuilder", inherit = Object,
 #' @export
 names.ScannerBuilder <- function(x) names(x$schema)
 
-#' Define a partition scheme for a DataSource
+#' Define a partition scheme for a Source
 #'
 #' @description
-#' Pass a `PartitionScheme` to a [FileSystemDataSourceDiscovery]'s `$create()`
+#' Pass a `PartitionScheme` to a [FileSystemSourceDiscovery]'s `$create()`
 #' method to indicate how the file's paths should be interpreted to define
 #' partitioning.
 #'

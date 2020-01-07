@@ -85,15 +85,15 @@ class ARROW_DS_EXPORT SimpleFragment : public Fragment {
 };
 
 /// \brief A basic component of a Dataset which yields zero or more
-/// Fragments. A DataSource acts as a discovery mechanism of Fragments
+/// Fragments. A Source acts as a discovery mechanism of Fragments
 /// and partitions, e.g. files deeply nested in a directory.
-class ARROW_DS_EXPORT DataSource {
+class ARROW_DS_EXPORT Source {
  public:
   /// \brief GetFragments returns an iterator of Fragments. The ScanOptions
   /// controls filtering and schema inference.
   FragmentIterator GetFragments(std::shared_ptr<ScanOptions> options);
 
-  /// \brief An expression which evaluates to true for all data viewed by this DataSource.
+  /// \brief An expression which evaluates to true for all data viewed by this Source.
   /// May be null, which indicates no information is available.
   const std::shared_ptr<Expression>& partition_expression() const {
     return partition_expression_;
@@ -102,17 +102,16 @@ class ARROW_DS_EXPORT DataSource {
   /// \brief The name identifying the kind of data source
   virtual std::string type_name() const = 0;
 
-  virtual ~DataSource() = default;
+  virtual ~Source() = default;
 
  protected:
-  DataSource() = default;
-  explicit DataSource(std::shared_ptr<Expression> c)
-      : partition_expression_(std::move(c)) {}
+  Source() = default;
+  explicit Source(std::shared_ptr<Expression> c) : partition_expression_(std::move(c)) {}
 
   virtual FragmentIterator GetFragmentsImpl(std::shared_ptr<ScanOptions> options) = 0;
 
   /// Mutates a ScanOptions by assuming partition_expression_ holds for all yielded
-  /// fragments. Returns false if the selector is not satisfiable in this DataSource.
+  /// fragments. Returns false if the selector is not satisfiable in this Source.
   virtual bool AssumePartitionExpression(
       const std::shared_ptr<ScanOptions>& scan_options,
       std::shared_ptr<ScanOptions>* simplified_scan_options) const;
@@ -120,11 +119,10 @@ class ARROW_DS_EXPORT DataSource {
   std::shared_ptr<Expression> partition_expression_;
 };
 
-/// \brief A DataSource consisting of a flat sequence of Fragments
-class ARROW_DS_EXPORT SimpleDataSource : public DataSource {
+/// \brief A Source consisting of a flat sequence of Fragments
+class ARROW_DS_EXPORT SimpleSource : public Source {
  public:
-  explicit SimpleDataSource(FragmentVector fragments)
-      : fragments_(std::move(fragments)) {}
+  explicit SimpleSource(FragmentVector fragments) : fragments_(std::move(fragments)) {}
 
   FragmentIterator GetFragmentsImpl(std::shared_ptr<ScanOptions> options) override;
 
@@ -134,17 +132,17 @@ class ARROW_DS_EXPORT SimpleDataSource : public DataSource {
   FragmentVector fragments_;
 };
 
-/// \brief A recursive DataSource with child DataSources.
-class ARROW_DS_EXPORT TreeDataSource : public DataSource {
+/// \brief A recursive Source with child Sources.
+class ARROW_DS_EXPORT TreeSource : public Source {
  public:
-  explicit TreeDataSource(DataSourceVector children) : children_(std::move(children)) {}
+  explicit TreeSource(SourceVector children) : children_(std::move(children)) {}
 
   FragmentIterator GetFragmentsImpl(std::shared_ptr<ScanOptions> options) override;
 
   std::string type_name() const override { return "tree"; }
 
  private:
-  DataSourceVector children_;
+  SourceVector children_;
 };
 
 /// \brief Top-level interface for a Dataset with fragments coming
@@ -155,26 +153,26 @@ class ARROW_DS_EXPORT Dataset : public std::enable_shared_from_this<Dataset> {
   //
   /// \param[in] sources one or more input data sources
   /// \param[in] schema a known schema to conform to
-  static Result<std::shared_ptr<Dataset>> Make(DataSourceVector sources,
+  static Result<std::shared_ptr<Dataset>> Make(SourceVector sources,
                                                std::shared_ptr<Schema> schema);
 
   /// \brief Begin to build a new Scan operation against this Dataset
   Result<std::shared_ptr<ScannerBuilder>> NewScan(std::shared_ptr<ScanContext> context);
   Result<std::shared_ptr<ScannerBuilder>> NewScan();
 
-  const DataSourceVector& sources() const { return sources_; }
+  const SourceVector& sources() const { return sources_; }
 
   std::shared_ptr<Schema> schema() const { return schema_; }
 
  protected:
-  explicit Dataset(DataSourceVector sources, std::shared_ptr<Schema> schema)
+  explicit Dataset(SourceVector sources, std::shared_ptr<Schema> schema)
       : schema_(std::move(schema)), sources_(std::move(sources)) {}
 
   // The data sources must conform their output to this schema (with
   // projections and filters taken into account)
   std::shared_ptr<Schema> schema_;
 
-  DataSourceVector sources_;
+  SourceVector sources_;
 };
 
 }  // namespace dataset

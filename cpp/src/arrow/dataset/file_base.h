@@ -167,51 +167,51 @@ class ARROW_DS_EXPORT FileFragment : public Fragment {
   std::shared_ptr<FileFormat> format_;
 };
 
-/// \brief A DataSource of FileFragments.
-class ARROW_DS_EXPORT FileSystemDataSource : public DataSource {
+/// \brief A Source of FileFragments.
+class ARROW_DS_EXPORT FileSystemSource : public Source {
  public:
-  /// \brief Create a FileSystemDataSource.
+  /// \brief Create a FileSystemSource.
   ///
   /// \param[in] filesystem the filesystem which files are from.
   /// \param[in] stats a list of files/directories to consume.
-  /// \param[in] source_partition the top-level partition of the DataSource
+  /// \param[in] source_partition the top-level partition of the Source
   /// attach additional partition expressions to FileStats found in `stats`.
   /// \param[in] format file format to create fragments from.
   ///
   /// The caller is not required to provide a complete coverage of nodes and
   /// partitions.
-  static Result<std::shared_ptr<DataSource>> Make(
+  static Result<std::shared_ptr<Source>> Make(
       std::shared_ptr<fs::FileSystem> filesystem, fs::FileStatsVector stats,
       std::shared_ptr<Expression> source_partition, std::shared_ptr<FileFormat> format);
 
-  /// \brief Create a FileSystemDataSource with file-level partitions.
+  /// \brief Create a FileSystemSource with file-level partitions.
   ///
   /// \param[in] filesystem the filesystem which files are from.
   /// \param[in] stats a list of files/directories to consume.
   /// \param[in] partitions partition information associated with `stats`.
-  /// \param[in] source_partition the top-level partition of the DataSource
+  /// \param[in] source_partition the top-level partition of the Source
   /// attach additional partition expressions to FileStats found in `stats`.
   /// \param[in] format file format to create fragments from.
   ///
   /// The caller is not required to provide a complete coverage of nodes and
   /// partitions.
-  static Result<std::shared_ptr<DataSource>> Make(
+  static Result<std::shared_ptr<Source>> Make(
       std::shared_ptr<fs::FileSystem> filesystem, fs::FileStatsVector stats,
       ExpressionVector partitions, std::shared_ptr<Expression> source_partition,
       std::shared_ptr<FileFormat> format);
 
-  /// \brief Create a FileSystemDataSource with file-level partitions.
+  /// \brief Create a FileSystemSource with file-level partitions.
   ///
   /// \param[in] filesystem the filesystem which files are from.
   /// \param[in] forest a PathForest of files/directories to consume.
   /// \param[in] partitions partition information associated with `forest`.
-  /// \param[in] source_partition the top-level partition of the DataSource
+  /// \param[in] source_partition the top-level partition of the Source
   /// attach additional partition expressions to FileStats found in `forest`.
   /// \param[in] format file format to create fragments from.
   ///
   /// The caller is not required to provide a complete coverage of nodes and
   /// partitions.
-  static Result<std::shared_ptr<DataSource>> Make(
+  static Result<std::shared_ptr<Source>> Make(
       std::shared_ptr<fs::FileSystem> filesystem, fs::PathForest forest,
       ExpressionVector partitions, std::shared_ptr<Expression> source_partition,
       std::shared_ptr<FileFormat> format);
@@ -223,10 +223,10 @@ class ARROW_DS_EXPORT FileSystemDataSource : public DataSource {
  protected:
   FragmentIterator GetFragmentsImpl(std::shared_ptr<ScanOptions> options) override;
 
-  FileSystemDataSource(std::shared_ptr<fs::FileSystem> filesystem, fs::PathForest forest,
-                       ExpressionVector file_partitions,
-                       std::shared_ptr<Expression> source_partition,
-                       std::shared_ptr<FileFormat> format);
+  FileSystemSource(std::shared_ptr<fs::FileSystem> filesystem, fs::PathForest forest,
+                   ExpressionVector file_partitions,
+                   std::shared_ptr<Expression> source_partition,
+                   std::shared_ptr<FileFormat> format);
 
   std::shared_ptr<fs::FileSystem> filesystem_;
   fs::PathForest forest_;

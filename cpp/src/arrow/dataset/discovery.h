@@ -36,7 +36,7 @@
 namespace arrow {
 namespace dataset {
 
-/// \brief DataSourceDiscovery provides a way to inspect a DataSource potential
+/// \brief SourceDiscovery provides a way to inspect a Source potential
 /// schema before materializing it. Thus, the user can peek the schema for
 /// data sources and decide on a unified schema. The pseudocode would look like
 ///
@@ -53,32 +53,32 @@ namespace dataset {
 ///     sources.append(f.Finish())
 ///
 ///   return Dataset(sources, common_schema)
-class ARROW_DS_EXPORT DataSourceDiscovery {
+class ARROW_DS_EXPORT SourceDiscovery {
  public:
   /// \brief Get the schemas of the Fragments and PartitionScheme.
   virtual Result<std::vector<std::shared_ptr<Schema>>> InspectSchemas() = 0;
 
-  /// \brief Get unified schema for the resulting DataSource.
+  /// \brief Get unified schema for the resulting Source.
   virtual Result<std::shared_ptr<Schema>> Inspect();
 
-  /// \brief Create a DataSource with the given schema.
-  virtual Result<std::shared_ptr<DataSource>> Finish(
+  /// \brief Create a Source with the given schema.
+  virtual Result<std::shared_ptr<Source>> Finish(
       const std::shared_ptr<Schema>& schema) = 0;
 
-  /// \brief Create a DataSource using an inspected schema.
-  virtual Result<std::shared_ptr<DataSource>> Finish();
+  /// \brief Create a Source using an inspected schema.
+  virtual Result<std::shared_ptr<Source>> Finish();
 
-  /// \brief Optional root partition for the resulting DataSource.
+  /// \brief Optional root partition for the resulting Source.
   const std::shared_ptr<Expression>& root_partition() const { return root_partition_; }
   Status SetRootPartition(std::shared_ptr<Expression> partition) {
     root_partition_ = partition;
     return Status::OK();
   }
 
-  virtual ~DataSourceDiscovery() = default;
+  virtual ~SourceDiscovery() = default;
 
  protected:
-  DataSourceDiscovery();
+  SourceDiscovery();
 
   std::shared_ptr<Expression> root_partition_;
 };
@@ -91,13 +91,13 @@ struct FileSystemDiscoveryOptions {
   // is a PartitionScheme which will yield no partition information.
   //
   // The (explicit or discovered) partition scheme will be applied to discovered files
-  // and the resulting partition information embedded in the DataSource.
+  // and the resulting partition information embedded in the Source.
   PartitionSchemeOrDiscovery partition_scheme{PartitionScheme::Default()};
 
   // For the purposes of applying the partition scheme, paths will be stripped
   // of the partition_base_dir. Files not matching the partition_base_dir
   // prefix will be skipped for partition discovery. The ignored files will still
-  // be part of the DataSource, but will not have partition information.
+  // be part of the Source, but will not have partition information.
   //
   // Example:
   // partition_base_dir = "/dataset";
@@ -114,7 +114,7 @@ struct FileSystemDiscoveryOptions {
   // Invalid files (via selector or explicitly) will be excluded by checking
   // with the FileFormat::IsSupported method.  This will incur IO for each files
   // in a serial and single threaded fashion. Disabling this feature will skip the
-  // IO, but unsupported files may be present in the DataSource
+  // IO, but unsupported files may be present in the Source
   // (resulting in an error at scan time).
   bool exclude_invalid_files = true;
 
@@ -133,47 +133,46 @@ struct FileSystemDiscoveryOptions {
   };
 };
 
-/// \brief FileSystemDataSourceFactory creates a DataSource from a vector of
+/// \brief FileSystemSourceFactory creates a Source from a vector of
 /// fs::FileStats or a fs::FileSelector.
-class ARROW_DS_EXPORT FileSystemDataSourceDiscovery : public DataSourceDiscovery {
+class ARROW_DS_EXPORT FileSystemSourceDiscovery : public SourceDiscovery {
  public:
-  /// \brief Build a FileSystemDataSourceDiscovery from an explicit list of
+  /// \brief Build a FileSystemSourceDiscovery from an explicit list of
   /// paths.
   ///
-  /// \param[in] filesystem passed to FileSystemDataSource
-  /// \param[in] paths passed to FileSystemDataSource
-  /// \param[in] format passed to FileSystemDataSource
+  /// \param[in] filesystem passed to FileSystemSource
+  /// \param[in] paths passed to FileSystemSource
+  /// \param[in] format passed to FileSystemSource
   /// \param[in] options see FileSystemDiscoveryOptions for more information.
-  static Result<std::shared_ptr<DataSourceDiscovery>> Make(
+  static Result<std::shared_ptr<SourceDiscovery>> Make(
       std::shared_ptr<fs::FileSystem> filesystem, const std::vector<std::string>& paths,
       std::shared_ptr<FileFormat> format, FileSystemDiscoveryOptions options);
 
-  /// \brief Build a FileSystemDataSourceDiscovery from a fs::FileSelector.
+  /// \brief Build a FileSystemSourceDiscovery from a fs::FileSelector.
   ///
   /// The selector will expand to a vector of FileStats. The expansion/crawling
-  /// is performed in this function call. Thus, the finalized DataSource is
+  /// is performed in this function call. Thus, the finalized Source is
   /// working with a snapshot of the filesystem.
   //
   /// If options.partition_base_dir is not provided, it will be overwritten
   /// with selector.base_dir.
   ///
-  /// \param[in] filesystem passed to FileSystemDataSource
+  /// \param[in] filesystem passed to FileSystemSource
   /// \param[in] selector used to crawl and search files
-  /// \param[in] format passed to FileSystemDataSource
+  /// \param[in] format passed to FileSystemSource
   /// \param[in] options see FileSystemDiscoveryOptions for more information.
-  static Result<std::shared_ptr<DataSourceDiscovery>> Make(
+  static Result<std::shared_ptr<SourceDiscovery>> Make(
       std::shared_ptr<fs::FileSystem> filesystem, fs::FileSelector selector,
       std::shared_ptr<FileFormat> format, FileSystemDiscoveryOptions options);
 
   Result<std::vector<std::shared_ptr<Schema>>> InspectSchemas() override;
 
-  Result<std::shared_ptr<DataSource>> Finish(
-      const std::shared_ptr<Schema>& schema) override;
+  Result<std::shared_ptr<Source>> Finish(const std::shared_ptr<Schema>& schema) override;
 
  protected:
-  FileSystemDataSourceDiscovery(std::shared_ptr<fs::FileSystem> filesystem,
-                                fs::PathForest forest, std::shared_ptr<FileFormat> format,
-                                FileSystemDiscoveryOptions options);
+  FileSystemSourceDiscovery(std::shared_ptr<fs::FileSystem> filesystem,
+                            fs::PathForest forest, std::shared_ptr<FileFormat> format,
+                            FileSystemDiscoveryOptions options);
 
   static Result<fs::PathForest> Filter(const std::shared_ptr<fs::FileSystem>& filesystem,
                                        const std::shared_ptr<FileFormat>& format,

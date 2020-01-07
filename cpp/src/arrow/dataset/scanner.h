@@ -138,7 +138,7 @@ Result<ScanTaskIterator> ScanTaskIteratorFromRecordBatch(
 
 /// \brief Scanner is a materialized scan operation with context and options
 /// bound. A scanner is the class that glues ScanTask, Fragment,
-/// and DataSource. In python pseudo code, it performs the following:
+/// and Source. In python pseudo code, it performs the following:
 ///
 ///  def Scan():
 ///    for source in this.sources_:
@@ -147,7 +147,7 @@ Result<ScanTaskIterator> ScanTaskIteratorFromRecordBatch(
 ///          yield scan_task
 class ARROW_DS_EXPORT Scanner {
  public:
-  Scanner(DataSourceVector sources, std::shared_ptr<ScanOptions> options,
+  Scanner(SourceVector sources, std::shared_ptr<ScanOptions> options,
           std::shared_ptr<ScanContext> context)
       : sources_(std::move(sources)),
         options_(std::move(options)),
@@ -170,7 +170,7 @@ class ARROW_DS_EXPORT Scanner {
   /// \brief Return a TaskGroup according to ScanContext thread rules.
   std::shared_ptr<internal::TaskGroup> TaskGroup() const;
 
-  DataSourceVector sources_;
+  SourceVector sources_;
   std::shared_ptr<ScanOptions> options_;
   std::shared_ptr<ScanContext> context_;
 };
@@ -184,7 +184,7 @@ class ARROW_DS_EXPORT ScannerBuilder {
 
   /// \brief Set the subset of columns to materialize.
   ///
-  /// This subset will be passed down to DataSources and corresponding Fragments.
+  /// This subset will be passed down to Sources and corresponding Fragments.
   /// The goal is to avoid loading/copying/deserializing columns that will
   /// not be required further down the compute chain.
   ///
@@ -197,7 +197,7 @@ class ARROW_DS_EXPORT ScannerBuilder {
 
   /// \brief Set the filter expression to return only rows matching the filter.
   ///
-  /// The predicate will be passed down to DataSources and corresponding
+  /// The predicate will be passed down to Sources and corresponding
   /// Fragments to exploit predicate pushdown if possible using
   /// partition information or Fragment internal metadata, e.g. Parquet statistics.
   ///

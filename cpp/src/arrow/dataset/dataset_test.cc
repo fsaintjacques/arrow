@@ -47,9 +47,9 @@ TEST_F(TestSimpleFragment, Scan) {
   AssertFragmentEquals(reader.get(), &fragment);
 }
 
-class TestSimpleDataSource : public DatasetFixtureMixin {};
+class TestSimpleSource : public DatasetFixtureMixin {};
 
-TEST_F(TestSimpleDataSource, GetFragments) {
+TEST_F(TestSimpleSource, GetFragments) {
   constexpr int64_t kNumberFragments = 4;
   constexpr int64_t kBatchSize = 1024;
   constexpr int64_t kNumberBatches = 16;
@@ -62,14 +62,14 @@ TEST_F(TestSimpleDataSource, GetFragments) {
   auto fragment = std::make_shared<SimpleFragment>(batches, options_);
   // It is safe to copy fragment multiple time since Scan() does not consume
   // the internal array.
-  auto source = SimpleDataSource({kNumberFragments, fragment});
+  auto source = SimpleSource({kNumberFragments, fragment});
 
-  AssertDataSourceEquals(reader.get(), &source);
+  AssertSourceEquals(reader.get(), &source);
 }
 
-class TestTreeDataSource : public DatasetFixtureMixin {};
+class TestTreeSource : public DatasetFixtureMixin {};
 
-TEST_F(TestTreeDataSource, GetFragments) {
+TEST_F(TestTreeSource, GetFragments) {
   constexpr int64_t kBatchSize = 1024;
   constexpr int64_t kNumberBatches = 16;
   constexpr int64_t kChildPerNode = 2;
@@ -85,21 +85,21 @@ TEST_F(TestTreeDataSource, GetFragments) {
   auto fragment = std::make_shared<SimpleFragment>(batches, options_);
 
   // Creates a complete binary tree of depth kCompleteBinaryTreeDepth where the
-  // leaves are SimpleDataSource containing kChildPerNode fragments.
+  // leaves are SimpleSource containing kChildPerNode fragments.
 
   auto l1_leaf_source =
-      std::make_shared<SimpleDataSource>(FragmentVector{kChildPerNode, fragment});
+      std::make_shared<SimpleSource>(FragmentVector{kChildPerNode, fragment});
 
   auto l2_leaf_tree_source =
-      std::make_shared<TreeDataSource>(DataSourceVector{kChildPerNode, l1_leaf_source});
+      std::make_shared<TreeSource>(SourceVector{kChildPerNode, l1_leaf_source});
 
-  auto l3_middle_tree_source = std::make_shared<TreeDataSource>(
-      DataSourceVector{kChildPerNode, l2_leaf_tree_source});
+  auto l3_middle_tree_source =
+      std::make_shared<TreeSource>(SourceVector{kChildPerNode, l2_leaf_tree_source});
 
-  auto root_source = std::make_shared<TreeDataSource>(
-      DataSourceVector{kChildPerNode, l3_middle_tree_source});
+  auto root_source =
+      std::make_shared<TreeSource>(SourceVector{kChildPerNode, l3_middle_tree_source});
 
-  AssertDataSourceEquals(reader.get(), root_source.get());
+  AssertSourceEquals(reader.get(), root_source.get());
 }
 
 class TestDataset : public DatasetFixtureMixin {};
@@ -116,9 +116,9 @@ TEST_F(TestDataset, TrivialScan) {
   auto fragment = std::make_shared<SimpleFragment>(batches, options_);
   FragmentVector fragments{kNumberFragments, fragment};
 
-  DataSourceVector sources = {
-      std::make_shared<SimpleDataSource>(fragments),
-      std::make_shared<SimpleDataSource>(fragments),
+  SourceVector sources = {
+      std::make_shared<SimpleSource>(fragments),
+      std::make_shared<SimpleSource>(fragments),
   };
 
   const int64_t total_batches = sources.size() * kNumberFragments * kNumberBatches;
@@ -291,23 +291,23 @@ TEST_F(TestEndToEnd, EndToEndSingleSource) {
 
   // Creation.
   //
-  // A Dataset is the union of one or more DataSources with the same schema.
-  // Example of DataSource, FileSystemDataSource, OdbcDataSource,
-  // FlightDataSource.
+  // A Dataset is the union of one or more Sources with the same schema.
+  // Example of Source, FileSystemSource, OdbcSource,
+  // FlightSource.
 
-  // A DataSource is composed of Fragments. Each Fragment can yield
-  // multiple RecordBatches. DataSources can be created manually or "discovered"
-  // via the DataSourceDiscovery interface.
-  std::shared_ptr<DataSourceDiscovery> discovery;
+  // A Source is composed of Fragments. Each Fragment can yield
+  // multiple RecordBatches. Sources can be created manually or "discovered"
+  // via the SourceDiscovery interface.
+  std::shared_ptr<SourceDiscovery> discovery;
 
   // The user must specify which FileFormat is used to create FileFragments.
-  // This option is specific to FileSystemDataSource (and the builder).
+  // This option is specific to FileSystemSource (and the builder).
   auto format_schema = SchemaFromColumnNames(schema_, {"region", "model", "sales"});
   auto format = std::make_shared<JSONRecordBatchFileFormat>(format_schema);
 
   // A selector is used to crawl files and directories of a
   // filesystem. If the options in FileSelector are not enough, the
-  // FileSystemDataSourceDiscovery class also supports an explicit list of
+  // FileSystemSourceDiscovery class also supports an explicit list of
   // fs::FileStats instead of the selector.
   fs::FileSelector s;
   s.base_dir = "/dataset";
@@ -319,7 +319,7 @@ TEST_F(TestEndToEnd, EndToEndSingleSource) {
   FileSystemDiscoveryOptions options;
   options.ignore_prefixes = {"."};
 
-  // Partitions expressions can be discovered for DataSource and Fragments.
+  // Partitions expressions can be discovered for Source and Fragments.
   // This metadata is then used in conjuction with the query filter to apply
   // the pushdown predicate optimization.
   //
@@ -338,7 +338,7 @@ TEST_F(TestEndToEnd, EndToEndSingleSource) {
       SchemaPartitionScheme::MakeDiscovery({"year", "month", "country"});
 
   ASSERT_OK_AND_ASSIGN(discovery,
-                       FileSystemDataSourceDiscovery::Make(fs_, s, format, options));
+                       FileSystemSourceDiscovery::Make(fs_, s, format, options));
 
   // Fragments might have compatible but slightly different schemas, e.g.
   // schema evolved by adding/renaming columns. In this case, the schema is
@@ -347,11 +347,11 @@ TEST_F(TestEndToEnd, EndToEndSingleSource) {
   ASSERT_OK_AND_ASSIGN(auto inspected_schema, discovery->Inspect());
   EXPECT_EQ(*schema_, *inspected_schema);
 
-  // Build the DataSource where partitions are attached to fragments (files).
-  ASSERT_OK_AND_ASSIGN(auto datasource, discovery->Finish(inspected_schema));
+  // Build the Source where partitions are attached to fragments (files).
+  ASSERT_OK_AND_ASSIGN(auto source, discovery->Finish(inspected_schema));
 
-  // Create the Dataset from our single DataSource.
-  ASSERT_OK_AND_ASSIGN(auto dataset, Dataset::Make({datasource}, inspected_schema));
+  // Create the Dataset from our single Source.
+  ASSERT_OK_AND_ASSIGN(auto dataset, Dataset::Make({source}, inspected_schema));
 
   // Querying.
   //
@@ -366,7 +366,7 @@ TEST_F(TestEndToEnd, EndToEndSingleSource) {
   // be materialized if the Fragment supports it. This is the major benefit
   // of using a column-major format versus a row-major format.
   //
-  // This API decouples the DataSource/Fragment implementation and column
+  // This API decouples the Source/Fragment implementation and column
   // projection from the query part.
   //
   // For example, a ParquetFileFragment may read the necessary byte ranges
@@ -381,7 +381,7 @@ TEST_F(TestEndToEnd, EndToEndSingleSource) {
   // yielded. Predicate pushdown optimizations are applied using partition information if
   // available.
   //
-  // This API decouples predicate pushdown from the DataSource implementation
+  // This API decouples predicate pushdown from the Source implementation
   // and partition discovery.
   //
   // The following filter tests both predicate pushdown and post filtering
@@ -427,10 +427,10 @@ class TestSchemaUnification : public TestDataset {
     constexpr auto ds2_df1 = "/dataset/beta/part_ds=2/part_df=1/data.json";
     constexpr auto ds2_df2 = "/dataset/beta/part_ds=2/part_df=2/data.json";
     auto files = PathAndContent{
-        // First DataSource
+        // First Source
         {ds1_df1, R"([{"phy_1": 111, "phy_2": 211}])"},
         {ds1_df2, R"([{"phy_2": 212, "phy_3": 312}])"},
-        // Second DataSource
+        // Second Source
         {ds2_df1, R"([{"phy_3": 321, "phy_4": 421}])"},
         {ds2_df2, R"([{"phy_4": 422, "phy_2": 222}])"},
     };
@@ -443,7 +443,7 @@ class TestSchemaUnification : public TestDataset {
 
     auto get_source =
         [this](std::string base,
-               std::vector<std::string> paths) -> Result<std::shared_ptr<DataSource>> {
+               std::vector<std::string> paths) -> Result<std::shared_ptr<Source>> {
       auto resolver = [this](const FileSource& source) -> std::shared_ptr<Schema> {
         auto path = source.path();
         // A different schema for each data fragment.
@@ -467,8 +467,8 @@ class TestSchemaUnification : public TestDataset {
       options.partition_scheme =
           std::make_shared<HivePartitionScheme>(SchemaFromNames({"part_ds", "part_df"}));
 
-      ARROW_ASSIGN_OR_RAISE(auto discovery, FileSystemDataSourceDiscovery::Make(
-                                                fs_, paths, format, options));
+      ARROW_ASSIGN_OR_RAISE(auto discovery,
+                            FileSystemSourceDiscovery::Make(fs_, paths, format, options));
 
       ARROW_ASSIGN_OR_RAISE(auto schema, discovery->Inspect());
 

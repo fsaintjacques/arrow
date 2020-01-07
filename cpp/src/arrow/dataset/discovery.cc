@@ -35,9 +35,9 @@
 namespace arrow {
 namespace dataset {
 
-DataSourceDiscovery::DataSourceDiscovery() : root_partition_(scalar(true)) {}
+SourceDiscovery::SourceDiscovery() : root_partition_(scalar(true)) {}
 
-Result<std::shared_ptr<Schema>> DataSourceDiscovery::Inspect() {
+Result<std::shared_ptr<Schema>> SourceDiscovery::Inspect() {
   ARROW_ASSIGN_OR_RAISE(auto schemas, InspectSchemas());
 
   if (schemas.empty()) {
@@ -47,7 +47,7 @@ Result<std::shared_ptr<Schema>> DataSourceDiscovery::Inspect() {
   return UnifySchemas(schemas);
 }
 
-FileSystemDataSourceDiscovery::FileSystemDataSourceDiscovery(
+FileSystemSourceDiscovery::FileSystemSourceDiscovery(
     std::shared_ptr<fs::FileSystem> filesystem, fs::PathForest forest,
     std::shared_ptr<FileFormat> format, FileSystemDiscoveryOptions options)
     : fs_(std::move(filesystem)),
@@ -70,7 +70,7 @@ bool StartsWithAnyOf(const std::vector<std::string>& prefixes, const std::string
   return std::any_of(prefixes.cbegin(), prefixes.cend(), matches_prefix);
 }
 
-Result<fs::PathForest> FileSystemDataSourceDiscovery::Filter(
+Result<fs::PathForest> FileSystemSourceDiscovery::Filter(
     const std::shared_ptr<fs::FileSystem>& filesystem,
     const std::shared_ptr<FileFormat>& format, const FileSystemDiscoveryOptions& options,
     fs::PathForest forest) {
@@ -99,7 +99,7 @@ Result<fs::PathForest> FileSystemDataSourceDiscovery::Filter(
   return fs::PathForest::MakeFromPreSorted(std::move(out));
 }
 
-Result<std::shared_ptr<DataSourceDiscovery>> FileSystemDataSourceDiscovery::Make(
+Result<std::shared_ptr<SourceDiscovery>> FileSystemSourceDiscovery::Make(
     std::shared_ptr<fs::FileSystem> filesystem, const std::vector<std::string>& paths,
     std::shared_ptr<FileFormat> format, FileSystemDiscoveryOptions options) {
   ARROW_ASSIGN_OR_RAISE(auto files, filesystem->GetTargetStats(paths));
@@ -127,11 +127,11 @@ Result<std::shared_ptr<DataSourceDiscovery>> FileSystemDataSourceDiscovery::Make
 
   ARROW_ASSIGN_OR_RAISE(forest, Filter(filesystem, format, options, std::move(forest)));
 
-  return std::shared_ptr<DataSourceDiscovery>(new FileSystemDataSourceDiscovery(
+  return std::shared_ptr<SourceDiscovery>(new FileSystemSourceDiscovery(
       std::move(filesystem), std::move(forest), std::move(format), std::move(options)));
 }
 
-Result<std::shared_ptr<DataSourceDiscovery>> FileSystemDataSourceDiscovery::Make(
+Result<std::shared_ptr<SourceDiscovery>> FileSystemSourceDiscovery::Make(
     std::shared_ptr<fs::FileSystem> filesystem, fs::FileSelector selector,
     std::shared_ptr<FileFormat> format, FileSystemDiscoveryOptions options) {
   ARROW_ASSIGN_OR_RAISE(auto files, filesystem->GetTargetStats(selector));
@@ -147,11 +147,11 @@ Result<std::shared_ptr<DataSourceDiscovery>> FileSystemDataSourceDiscovery::Make
     options.partition_base_dir = selector.base_dir;
   }
 
-  return std::shared_ptr<DataSourceDiscovery>(new FileSystemDataSourceDiscovery(
+  return std::shared_ptr<SourceDiscovery>(new FileSystemSourceDiscovery(
       filesystem, std::move(forest), std::move(format), std::move(options)));
 }
 
-Result<std::shared_ptr<Schema>> FileSystemDataSourceDiscovery::PartitionSchema() {
+Result<std::shared_ptr<Schema>> FileSystemSourceDiscovery::PartitionSchema() {
   if (auto partition_scheme = options_.partition_scheme.scheme()) {
     return partition_scheme->schema();
   }
@@ -167,8 +167,7 @@ Result<std::shared_ptr<Schema>> FileSystemDataSourceDiscovery::PartitionSchema()
   return options_.partition_scheme.discovery()->Inspect(paths);
 }
 
-Result<std::vector<std::shared_ptr<Schema>>>
-FileSystemDataSourceDiscovery::InspectSchemas() {
+Result<std::vector<std::shared_ptr<Schema>>> FileSystemSourceDiscovery::InspectSchemas() {
   std::vector<std::shared_ptr<Schema>> schemas;
 
   for (const auto& f : forest_.stats()) {
@@ -184,12 +183,12 @@ FileSystemDataSourceDiscovery::InspectSchemas() {
   return schemas;
 }
 
-Result<std::shared_ptr<DataSource>> DataSourceDiscovery::Finish() {
+Result<std::shared_ptr<Source>> SourceDiscovery::Finish() {
   ARROW_ASSIGN_OR_RAISE(auto schema, Inspect());
   return Finish(schema);
 }
 
-Result<std::shared_ptr<DataSource>> FileSystemDataSourceDiscovery::Finish(
+Result<std::shared_ptr<Source>> FileSystemSourceDiscovery::Finish(
     const std::shared_ptr<Schema>& schema) {
   ExpressionVector partitions(forest_.size(), scalar(true));
 
@@ -217,8 +216,8 @@ Result<std::shared_ptr<DataSource>> FileSystemDataSourceDiscovery::Finish(
 
   RETURN_NOT_OK(forest_.Visit(apply_partition_scheme));
 
-  return FileSystemDataSource::Make(fs_, forest_, std::move(partitions), root_partition_,
-                                    format_);
+  return FileSystemSource::Make(fs_, forest_, std::move(partitions), root_partition_,
+                                format_);
 }
 
 }  // namespace dataset

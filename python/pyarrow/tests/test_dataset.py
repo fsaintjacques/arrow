@@ -73,7 +73,7 @@ def dataset(mockfs):
             pa.field('key', pa.string())
         ])
     )
-    discovery = ds.FileSystemDataSourceDiscovery(mockfs, selector, format,
+    discovery = ds.FileSystemSourceDiscovery(mockfs, selector, format,
                                                  options)
     schema = discovery.inspect()
     source = discovery.finish()
@@ -86,7 +86,7 @@ def test_filesystem_data_source(mockfs):
     paths = ['subdir/1/xxx/file0.parquet', 'subdir/2/yyy/file1.parquet']
     partitions = [ds.ScalarExpression(True), ds.ScalarExpression(True)]
 
-    source = ds.FileSystemDataSource(mockfs, paths, partitions,
+    source = ds.FileSystemSource(mockfs, paths, partitions,
                                      source_partition=None,
                                      file_format=file_format)
 
@@ -107,7 +107,7 @@ def test_filesystem_data_source(mockfs):
             ds.ScalarExpression(2)
         )
     ]
-    source = ds.FileSystemDataSource(mockfs, paths, partitions,
+    source = ds.FileSystemSource(mockfs, paths, partitions,
                                      source_partition=source_partition,
                                      file_format=file_format)
     assert source.partition_expression.equals(source_partition)
@@ -176,7 +176,7 @@ def test_abstract_classes():
     classes = [
         ds.FileFormat,
         ds.Scanner,
-        ds.DataSource,
+        ds.Source,
         ds.Expression,
         ds.PartitionScheme,
     ]
@@ -317,7 +317,7 @@ def test_file_system_discovery(mockfs, paths_or_selector):
     assert options.ignore_prefixes == ['.', '_']
     assert options.exclude_invalid_files is True
 
-    discovery = ds.FileSystemDataSourceDiscovery(
+    discovery = ds.FileSystemSourceDiscovery(
         mockfs, paths_or_selector, format, options
     )
     inspected_schema = discovery.inspect()
@@ -325,11 +325,11 @@ def test_file_system_discovery(mockfs, paths_or_selector):
     assert isinstance(discovery.inspect(), pa.Schema)
     assert isinstance(discovery.inspect_schemas(), list)
     assert isinstance(discovery.finish(inspected_schema),
-                      ds.FileSystemDataSource)
+                      ds.FileSystemSource)
     assert discovery.root_partition.equals(ds.ScalarExpression(True))
 
     data_source = discovery.finish()
-    assert isinstance(data_source, ds.DataSource)
+    assert isinstance(data_source, ds.Source)
 
     dataset = ds.Dataset([data_source], inspected_schema)
 

@@ -185,26 +185,26 @@ cdef extern from "arrow/dataset/api.h" namespace "arrow::dataset" nogil:
         CSimpleFragment(vector[shared_ptr[CRecordBatch]] record_batches,
                             shared_ptr[CScanOptions] scan_options)
 
-    cdef cppclass CDataSource "arrow::dataset::DataSource":
+    cdef cppclass CSource "arrow::dataset::Source":
         CFragmentIterator GetFragments(shared_ptr[CScanOptions] options)
         const shared_ptr[CExpression]& partition_expression()
         c_string type_name()
 
-    ctypedef vector[shared_ptr[CDataSource]] CDataSourceVector \
-        "arrow::dataset::DataSourceVector"
+    ctypedef vector[shared_ptr[CSource]] CSourceVector \
+        "arrow::dataset::SourceVector"
 
-    cdef cppclass CTreeDataSource "arrow::dataset::TreeDataSource"(
-            CDataSource):
-        CTreeDataSource(CDataSourceVector children)
+    cdef cppclass CTreeSource "arrow::dataset::TreeSource"(
+            CSource):
+        CTreeSource(CSourceVector children)
 
     cdef cppclass CDataset "arrow::dataset::Dataset":
         @staticmethod
-        CResult[shared_ptr[CDataset]] Make(CDataSourceVector sources,
+        CResult[shared_ptr[CDataset]] Make(CSourceVector sources,
                                            shared_ptr[CSchema] schema)
         CResult[shared_ptr[CScannerBuilder]] NewScanWithContext "NewScan"(
             shared_ptr[CScanContext] context)
         CResult[shared_ptr[CScannerBuilder]] NewScan()
-        const CDataSourceVector& sources()
+        const CSourceVector& sources()
         shared_ptr[CSchema] schema()
 
     cdef cppclass CFileScanOptions "arrow::dataset::FileScanOptions"(
@@ -254,10 +254,10 @@ cdef extern from "arrow/dataset/api.h" namespace "arrow::dataset" nogil:
         CParquetFragment(const CFileSource& source,
                              shared_ptr[CScanOptions] options)
 
-    cdef cppclass CFileSystemDataSource \
-            "arrow::dataset::FileSystemDataSource"(CDataSource):
+    cdef cppclass CFileSystemSource \
+            "arrow::dataset::FileSystemSource"(CSource):
         @staticmethod
-        CResult[shared_ptr[CDataSource]] Make(
+        CResult[shared_ptr[CSource]] Make(
                                      shared_ptr[CFileSystem] filesystem,
                                      CFileStatsVector stats,
                                      CExpressionVector partitions,
@@ -321,26 +321,26 @@ cdef extern from "arrow/dataset/api.h" namespace "arrow::dataset" nogil:
         c_bool exclude_invalid_files
         vector[c_string] ignore_prefixes
 
-    cdef cppclass CDataSourceDiscovery "arrow::dataset::DataSourceDiscovery":
+    cdef cppclass CSourceDiscovery "arrow::dataset::SourceDiscovery":
         CResult[vector[shared_ptr[CSchema]]] InspectSchemas()
         CResult[shared_ptr[CSchema]] Inspect()
-        CResult[shared_ptr[CDataSource]] Finish(shared_ptr[CSchema])
-        CResult[shared_ptr[CDataSource]] Finish()
+        CResult[shared_ptr[CSource]] Finish(shared_ptr[CSchema])
+        CResult[shared_ptr[CSource]] Finish()
         shared_ptr[CExpression] root_partition()
         CStatus SetRootPartition(shared_ptr[CExpression] partition)
 
-    cdef cppclass CFileSystemDataSourceDiscovery \
-            "arrow::dataset::FileSystemDataSourceDiscovery"(
-                CDataSourceDiscovery):
+    cdef cppclass CFileSystemSourceDiscovery \
+            "arrow::dataset::FileSystemSourceDiscovery"(
+                CSourceDiscovery):
         @staticmethod
-        CResult[shared_ptr[CDataSourceDiscovery]] MakeFromPaths "Make"(
+        CResult[shared_ptr[CSourceDiscovery]] MakeFromPaths "Make"(
             shared_ptr[CFileSystem] filesystem,
             vector[c_string] paths,
             shared_ptr[CFileFormat] format,
             CFileSystemDiscoveryOptions options
         )
         @staticmethod
-        CResult[shared_ptr[CDataSourceDiscovery]] MakeFromSelector "Make"(
+        CResult[shared_ptr[CSourceDiscovery]] MakeFromSelector "Make"(
             shared_ptr[CFileSystem] filesystem,
             CFileSelector,
             shared_ptr[CFileFormat] format,

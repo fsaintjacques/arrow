@@ -48,11 +48,11 @@ class Fragment;
 using FragmentIterator = Iterator<std::shared_ptr<Fragment>>;
 using FragmentVector = std::vector<std::shared_ptr<Fragment>>;
 
-class DataSource;
-using DataSourceVector = std::vector<std::shared_ptr<DataSource>>;
+class Source;
+using SourceVector = std::vector<std::shared_ptr<Source>>;
 
 struct DiscoveryOptions;
-class DataSourceDiscovery;
+class SourceDiscovery;
 
 class FileFormat;
 

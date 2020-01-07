@@ -263,27 +263,27 @@ cdef class FileSystemDiscoveryOptions:
         self.options.ignore_prefixes = [tobytes(v) for v in values]
 
 
-cdef class DataSourceDiscovery:
+cdef class SourceDiscovery:
 
     cdef:
-        shared_ptr[CDataSourceDiscovery] wrapped
-        CDataSourceDiscovery* discovery
+        shared_ptr[CSourceDiscovery] wrapped
+        CSourceDiscovery* discovery
 
     def __init__(self):
         _forbid_instantiation(self.__class__)
 
-    cdef init(self, shared_ptr[CDataSourceDiscovery]& sp):
+    cdef init(self, shared_ptr[CSourceDiscovery]& sp):
         self.wrapped = sp
         self.discovery = sp.get()
 
     @staticmethod
-    cdef wrap(shared_ptr[CDataSourceDiscovery]& sp):
-        cdef DataSourceDiscovery self = \
-            DataSourceDiscovery.__new__(DataSourceDiscovery)
+    cdef wrap(shared_ptr[CSourceDiscovery]& sp):
+        cdef SourceDiscovery self = \
+            SourceDiscovery.__new__(SourceDiscovery)
         self.init(sp)
         return self
 
-    cdef inline shared_ptr[CDataSourceDiscovery] unwrap(self) nogil:
+    cdef inline shared_ptr[CSourceDiscovery] unwrap(self) nogil:
         return self.wrapped
 
     @property
@@ -317,7 +317,7 @@ cdef class DataSourceDiscovery:
     def finish(self, Schema schema = None):
         cdef:
             shared_ptr[CSchema] sp_schema
-            CResult[shared_ptr[CDataSource]] result
+            CResult[shared_ptr[CSource]] result
         if schema is not None:
             sp_schema = pyarrow_unwrap_schema(schema)
             with nogil:
@@ -325,13 +325,13 @@ cdef class DataSourceDiscovery:
         else:
             with nogil:
                 result = self.discovery.Finish()
-        return DataSource.wrap(GetResultValue(result))
+        return Source.wrap(GetResultValue(result))
 
 
-cdef class FileSystemDataSourceDiscovery(DataSourceDiscovery):
+cdef class FileSystemSourceDiscovery(SourceDiscovery):
 
     cdef:
-        CFileSystemDataSourceDiscovery* filesystem_discovery
+        CFileSystemSourceDiscovery* filesystem_discovery
 
     def __init__(self, FileSystem filesystem not None, paths_or_selector,
                  FileFormat format not None,
@@ -339,7 +339,7 @@ cdef class FileSystemDataSourceDiscovery(DataSourceDiscovery):
         cdef:
             vector[c_string] paths
             CFileSelector selector
-            CResult[shared_ptr[CDataSourceDiscovery]] result
+            CResult[shared_ptr[CSourceDiscovery]] result
             shared_ptr[CFileSystem] c_filesystem
             shared_ptr[CFileFormat] c_format
             CFileSystemDiscoveryOptions c_options
@@ -354,7 +354,7 @@ cdef class FileSystemDataSourceDiscovery(DataSourceDiscovery):
         if isinstance(paths_or_selector, FileSelector):
             with nogil:
                 selector = (<FileSelector>paths_or_selector).selector
-                result = CFileSystemDataSourceDiscovery.MakeFromSelector(
+                result = CFileSystemSourceDiscovery.MakeFromSelector(
                     c_filesystem,
                     selector,
                     c_format,
@@ -363,7 +363,7 @@ cdef class FileSystemDataSourceDiscovery(DataSourceDiscovery):
         elif isinstance(paths_or_selector, (list, tuple)):
             paths = [tobytes(s) for s in paths_or_selector]
             with nogil:
-                result = CFileSystemDataSourceDiscovery.MakeFromPaths(
+                result = CFileSystemSourceDiscovery.MakeFromPaths(
                     c_filesystem,
                     paths,
                     c_format,
@@ -374,45 +374,45 @@ cdef class FileSystemDataSourceDiscovery(DataSourceDiscovery):
 
         self.init(GetResultValue(result))
 
-    cdef init(self, shared_ptr[CDataSourceDiscovery]& sp):
-        DataSourceDiscovery.init(self, sp)
-        self.filesystem_discovery = <CFileSystemDataSourceDiscovery*> sp.get()
+    cdef init(self, shared_ptr[CSourceDiscovery]& sp):
+        SourceDiscovery.init(self, sp)
+        self.filesystem_discovery = <CFileSystemSourceDiscovery*> sp.get()
 
 
-cdef class DataSource:
+cdef class Source:
     """Basic component of a Dataset which yields zero or more data fragments.
 
-    A DataSource acts as a discovery mechanism of data fragments and
+    A Source acts as a discovery mechanism of data fragments and
     partitions, e.g. files deeply nested in a directory.
     """
 
     cdef:
-        shared_ptr[CDataSource] wrapped
-        CDataSource* source
+        shared_ptr[CSource] wrapped
+        CSource* source
 
     def __init__(self):
         _forbid_instantiation(self.__class__)
 
-    cdef void init(self, const shared_ptr[CDataSource]& sp):
+    cdef void init(self, const shared_ptr[CSource]& sp):
         self.wrapped = sp
         self.source = sp.get()
 
     @staticmethod
-    cdef wrap(shared_ptr[CDataSource]& sp):
-        cdef DataSource self
+    cdef wrap(shared_ptr[CSource]& sp):
+        cdef Source self
 
         typ = frombytes(sp.get().type_name())
         if typ == 'tree':
-            self = TreeDataSource.__new__(TreeDataSource)
+            self = TreeSource.__new__(TreeSource)
         elif typ == 'filesystem':
-            self = FileSystemDataSource.__new__(FileSystemDataSource)
+            self = FileSystemSource.__new__(FileSystemSource)
         else:
             raise TypeError(typ)
 
         self.init(sp)
         return self
 
-    cdef shared_ptr[CDataSource] unwrap(self) nogil:
+    cdef shared_ptr[CSource] unwrap(self) nogil:
         return self.wrapped
 
     @property
@@ -425,39 +425,39 @@ cdef class DataSource:
             return Expression.wrap(expression)
 
 
-cdef class TreeDataSource(DataSource):
-    """A DataSource created from other data source objects"""
+cdef class TreeSource(Source):
+    """A Source created from other data source objects"""
 
     cdef:
-        CTreeDataSource* tree_source
+        CTreeSource* tree_source
 
     def __init__(self, data_sources):
         cdef:
-            DataSource child
-            CDataSourceVector children
-            shared_ptr[CTreeDataSource] tree_source
+            Source child
+            CSourceVector children
+            shared_ptr[CTreeSource] tree_source
 
         for child in data_sources:
             children.push_back(child.wrapped)
 
-        tree_source = make_shared[CTreeDataSource](children)
-        self.init(<shared_ptr[CDataSource]> tree_source)
+        tree_source = make_shared[CTreeSource](children)
+        self.init(<shared_ptr[CSource]> tree_source)
 
-    cdef void init(self, const shared_ptr[CDataSource]& sp):
-        DataSource.init(self, sp)
-        self.tree_source = <CTreeDataSource*> sp.get()
+    cdef void init(self, const shared_ptr[CSource]& sp):
+        Source.init(self, sp)
+        self.tree_source = <CTreeSource*> sp.get()
 
 
-cdef class FileSystemDataSource(DataSource):
-    """A DataSource created from a set of files on a particular filesystem"""
+cdef class FileSystemSource(Source):
+    """A Source created from a set of files on a particular filesystem"""
 
     cdef:
-        CFileSystemDataSource* filesystem_source
+        CFileSystemSource* filesystem_source
 
     def __init__(self, FileSystem filesystem not None, paths_or_selector,
                  partitions, Expression source_partition,
                  FileFormat file_format not None):
-        """Create a FileSystemDataSource
+        """Create a FileSystemSource
 
         Parameters
         ----------
@@ -476,7 +476,7 @@ cdef class FileSystemDataSource(DataSource):
             vector[CFileStats] c_file_stats
             shared_ptr[CExpression] c_source_partition
             vector[shared_ptr[CExpression]] c_partitions
-            CResult[shared_ptr[CDataSource]] result
+            CResult[shared_ptr[CSource]] result
 
         for stats in filesystem.get_target_stats(paths_or_selector):
             c_file_stats.push_back(stats.unwrap())
@@ -493,7 +493,7 @@ cdef class FileSystemDataSource(DataSource):
         if source_partition is not None:
             c_source_partition = source_partition.unwrap()
 
-        result = CFileSystemDataSource.Make(
+        result = CFileSystemSource.Make(
             filesystem.unwrap(),
             c_file_stats,
             c_partitions,
@@ -502,9 +502,9 @@ cdef class FileSystemDataSource(DataSource):
         )
         self.init(GetResultValue(result))
 
-    cdef void init(self, const shared_ptr[CDataSource]& sp):
-        DataSource.init(self, sp)
-        self.filesystem_source = <CFileSystemDataSource*> sp.get()
+    cdef void init(self, const shared_ptr[CSource]& sp):
+        Source.init(self, sp)
+        self.filesystem_source = <CFileSystemSource*> sp.get()
 
 
 cdef class Dataset:
@@ -524,14 +524,14 @@ cdef class Dataset:
 
         Parameters
         ----------
-        data_sources : list of DataSource
+        data_sources : list of Source
             One or more input data sources
         schema : Schema
             A known schema to conform to.
         """
         cdef:
-            DataSource source
-            CDataSourceVector sources
+            Source source
+            CSourceVector sources
             CResult[shared_ptr[CDataset]] result
 
         for source in data_sources:
@@ -558,8 +558,8 @@ cdef class Dataset:
 
     @property
     def sources(self):
-        cdef vector[shared_ptr[CDataSource]] sources = self.dataset.sources()
-        return [DataSource.wrap(source) for source in sources]
+        cdef vector[shared_ptr[CSource]] sources = self.dataset.sources()
+        return [Source.wrap(source) for source in sources]
 
     @property
     def schema(self):
@@ -662,7 +662,7 @@ cdef class ScannerBuilder:
     def project(self, columns):
         """Set the subset of columns to materialize.
 
-        This subset will be passed down to DataSources and corresponding
+        This subset will be passed down to Sources and corresponding
         data fragments. The goal is to avoid loading, copying, and
         deserializing columns that will not be required further down the
         compute chain.
@@ -697,7 +697,7 @@ cdef class ScannerBuilder:
     def filter(self, Expression filter_expression not None):
         """Set the filter expression to return only rows matching the filter.
 
-        The predicate will be passed down to DataSources and corresponding
+        The predicate will be passed down to Sources and corresponding
         data fragments to exploit predicate pushdown if possible using
         partition information or internal metadata, e.g. Parquet statistics.
         Otherwise filters the loaded RecordBatches before yielding them.

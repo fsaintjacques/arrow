@@ -1340,7 +1340,7 @@ RcppExport SEXP _arrow_csv___TableReader__Read(SEXP table_reader_sexp){
 
 // dataset.cpp
 #if defined(ARROW_R_WITH_ARROW)
-std::shared_ptr<ds::DataSourceDiscovery> dataset___FSDSDiscovery__Make2(const std::shared_ptr<fs::FileSystem>& fs, const std::shared_ptr<fs::FileSelector>& selector, const std::shared_ptr<ds::PartitionScheme>& partition_scheme);
+std::shared_ptr<ds::SourceDiscovery> dataset___FSDSDiscovery__Make2(const std::shared_ptr<fs::FileSystem>& fs, const std::shared_ptr<fs::FileSelector>& selector, const std::shared_ptr<ds::PartitionScheme>& partition_scheme);
 RcppExport SEXP _arrow_dataset___FSDSDiscovery__Make2(SEXP fs_sexp, SEXP selector_sexp, SEXP partition_scheme_sexp){
 BEGIN_RCPP
 	Rcpp::traits::input_parameter<const std::shared_ptr<fs::FileSystem>&>::type fs(fs_sexp);
@@ -1357,7 +1357,7 @@ RcppExport SEXP _arrow_dataset___FSDSDiscovery__Make2(SEXP fs_sexp, SEXP selecto
 
 // dataset.cpp
 #if defined(ARROW_R_WITH_ARROW)
-std::shared_ptr<ds::DataSourceDiscovery> dataset___FSDSDiscovery__Make1(const std::shared_ptr<fs::FileSystem>& fs, const std::shared_ptr<fs::FileSelector>& selector);
+std::shared_ptr<ds::SourceDiscovery> dataset___FSDSDiscovery__Make1(const std::shared_ptr<fs::FileSystem>& fs, const std::shared_ptr<fs::FileSelector>& selector);
 RcppExport SEXP _arrow_dataset___FSDSDiscovery__Make1(SEXP fs_sexp, SEXP selector_sexp){
 BEGIN_RCPP
 	Rcpp::traits::input_parameter<const std::shared_ptr<fs::FileSystem>&>::type fs(fs_sexp);
@@ -1373,10 +1373,10 @@ RcppExport SEXP _arrow_dataset___FSDSDiscovery__Make1(SEXP fs_sexp, SEXP selecto
 
 // dataset.cpp
 #if defined(ARROW_R_WITH_ARROW)
-std::shared_ptr<ds::DataSource> dataset___DSDiscovery__Finish1(const std::shared_ptr<ds::DataSourceDiscovery>& discovery);
+std::shared_ptr<ds::Source> dataset___DSDiscovery__Finish1(const std::shared_ptr<ds::SourceDiscovery>& discovery);
 RcppExport SEXP _arrow_dataset___DSDiscovery__Finish1(SEXP discovery_sexp){
 BEGIN_RCPP
-	Rcpp::traits::input_parameter<const std::shared_ptr<ds::DataSourceDiscovery>&>::type discovery(discovery_sexp);
+	Rcpp::traits::input_parameter<const std::shared_ptr<ds::SourceDiscovery>&>::type discovery(discovery_sexp);
 	return Rcpp::wrap(dataset___DSDiscovery__Finish1(discovery));
 END_RCPP
 }
@@ -1388,10 +1388,10 @@ RcppExport SEXP _arrow_dataset___DSDiscovery__Finish1(SEXP discovery_sexp){
 
 // dataset.cpp
 #if defined(ARROW_R_WITH_ARROW)
-std::shared_ptr<ds::DataSource> dataset___DSDiscovery__Finish2(const std::shared_ptr<ds::DataSourceDiscovery>& discovery, const std::shared_ptr<arrow::Schema>& schema);
+std::shared_ptr<ds::Source> dataset___DSDiscovery__Finish2(const std::shared_ptr<ds::SourceDiscovery>& discovery, const std::shared_ptr<arrow::Schema>& schema);
 RcppExport SEXP _arrow_dataset___DSDiscovery__Finish2(SEXP discovery_sexp, SEXP schema_sexp){
 BEGIN_RCPP
-	Rcpp::traits::input_parameter<const std::shared_ptr<ds::DataSourceDiscovery>&>::type discovery(discovery_sexp);
+	Rcpp::traits::input_parameter<const std::shared_ptr<ds::SourceDiscovery>&>::type discovery(discovery_sexp);
 	Rcpp::traits::input_parameter<const std::shared_ptr<arrow::Schema>&>::type schema(schema_sexp);
 	return Rcpp::wrap(dataset___DSDiscovery__Finish2(discovery, schema));
 END_RCPP
@@ -1404,10 +1404,10 @@ RcppExport SEXP _arrow_dataset___DSDiscovery__Finish2(SEXP discovery_sexp, SEXP 
 
 // dataset.cpp
 #if defined(ARROW_R_WITH_ARROW)
-std::shared_ptr<arrow::Schema> dataset___DSDiscovery__Inspect(const std::shared_ptr<ds::DataSourceDiscovery>& discovery);
+std::shared_ptr<arrow::Schema> dataset___DSDiscovery__Inspect(const std::shared_ptr<ds::SourceDiscovery>& discovery);
 RcppExport SEXP _arrow_dataset___DSDiscovery__Inspect(SEXP discovery_sexp){
 BEGIN_RCPP
-	Rcpp::traits::input_parameter<const std::shared_ptr<ds::DataSourceDiscovery>&>::type discovery(discovery_sexp);
+	Rcpp::traits::input_parameter<const std::shared_ptr<ds::SourceDiscovery>&>::type discovery(discovery_sexp);
 	return Rcpp::wrap(dataset___DSDiscovery__Inspect(discovery));
 END_RCPP
 }
@@ -1449,10 +1449,10 @@ RcppExport SEXP _arrow_dataset___HivePartitionScheme(SEXP schm_sexp){
 
 // dataset.cpp
 #if defined(ARROW_R_WITH_ARROW)
-std::shared_ptr<ds::Dataset> dataset___Dataset__create(const ds::DataSourceVector& sources, const std::shared_ptr<arrow::Schema>& schm);
+std::shared_ptr<ds::Dataset> dataset___Dataset__create(const ds::SourceVector& sources, const std::shared_ptr<arrow::Schema>& schm);
 RcppExport SEXP _arrow_dataset___Dataset__create(SEXP sources_sexp, SEXP schm_sexp){
 BEGIN_RCPP
-	Rcpp::traits::input_parameter<const ds::DataSourceVector&>::type sources(sources_sexp);
+	Rcpp::traits::input_parameter<const ds::SourceVector&>::type sources(sources_sexp);
 	Rcpp::traits::input_parameter<const std::shared_ptr<arrow::Schema>&>::type schm(schm_sexp);
 	return Rcpp::wrap(dataset___Dataset__create(sources, schm));
 END_RCPP

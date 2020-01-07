@@ -82,8 +82,8 @@ static ScanTaskIterator GetScanTaskIterator(FragmentIterator fragments,
 }
 
 Result<ScanTaskIterator> Scanner::Scan() {
-  // First, transforms DataSources in a flat Iterator<Fragment>. This
-  // iterator is lazily constructed, i.e. DataSource::GetFragments is never
+  // First, transforms Sources in a flat Iterator<Fragment>. This
+  // iterator is lazily constructed, i.e. Source::GetFragments is never
   // invoked.
   auto fragments_it = GetFragmentsFromSources(sources_, options_);
   // Second, transforms Iterator<Fragment> into a unified

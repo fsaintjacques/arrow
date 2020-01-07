@@ -154,8 +154,8 @@ test_that("Assembling a Dataset manually and getting a Table", {
   selector <- FileSelector$create(dataset_dir, recursive = TRUE)
   partition <- SchemaPartitionScheme$create(schema(part = double()))
 
-  dsd <- FileSystemDataSourceDiscovery$create(fs, selector, partition_scheme = partition)
-  expect_is(dsd, "FileSystemDataSourceDiscovery")
+  dsd <- FileSystemSourceDiscovery$create(fs, selector, partition_scheme = partition)
+  expect_is(dsd, "FileSystemSourceDiscovery")
 
   schm <- dsd$Inspect()
   expect_is(schm, "Schema")
@@ -164,10 +164,10 @@ test_that("Assembling a Dataset manually and getting a Table", {
   expect_equal(names(phys_schm), names(df1))
   expect_equal(names(schm), c(names(phys_schm), "part"))
 
-  datasource <- dsd$Finish(schm)
-  expect_is(datasource, "DataSource")
+  src <- dsd$Finish(schm)
+  expect_is(src, "Source")
 
-  ds <- Dataset$create(list(datasource), schm)
+  ds <- Dataset$create(list(src), schm)
   expect_is(ds, "Dataset")
   expect_equal(names(ds), names(schm))
 

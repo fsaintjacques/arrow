@@ -43,12 +43,12 @@ Result<ScanTaskIterator> FileFragment::Scan(std::shared_ptr<ScanContext> context
   return format_->ScanFile(source_, scan_options_, context);
 }
 
-FileSystemDataSource::FileSystemDataSource(std::shared_ptr<fs::FileSystem> filesystem,
-                                           fs::PathForest forest,
-                                           ExpressionVector file_partitions,
-                                           std::shared_ptr<Expression> source_partition,
-                                           std::shared_ptr<FileFormat> format)
-    : DataSource(std::move(source_partition)),
+FileSystemSource::FileSystemSource(std::shared_ptr<fs::FileSystem> filesystem,
+                                   fs::PathForest forest,
+                                   ExpressionVector file_partitions,
+                                   std::shared_ptr<Expression> source_partition,
+                                   std::shared_ptr<FileFormat> format)
+    : Source(std::move(source_partition)),
       filesystem_(std::move(filesystem)),
       forest_(std::move(forest)),
       partitions_(std::move(file_partitions)),
@@ -56,7 +56,7 @@ FileSystemDataSource::FileSystemDataSource(std::shared_ptr<fs::FileSystem> files
   DCHECK_EQ(static_cast<size_t>(forest_.size()), partitions_.size());
 }
 
-Result<std::shared_ptr<DataSource>> FileSystemDataSource::Make(
+Result<std::shared_ptr<Source>> FileSystemSource::Make(
     std::shared_ptr<fs::FileSystem> filesystem, fs::FileStatsVector stats,
     std::shared_ptr<Expression> source_partition, std::shared_ptr<FileFormat> format) {
   ExpressionVector partitions(stats.size(), scalar(true));
@@ -64,7 +64,7 @@ Result<std::shared_ptr<DataSource>> FileSystemDataSource::Make(
               std::move(source_partition), std::move(format));
 }
 
-Result<std::shared_ptr<DataSource>> FileSystemDataSource::Make(
+Result<std::shared_ptr<Source>> FileSystemSource::Make(
     std::shared_ptr<fs::FileSystem> filesystem, fs::FileStatsVector stats,
     ExpressionVector partitions, std::shared_ptr<Expression> source_partition,
     std::shared_ptr<FileFormat> format) {
@@ -73,17 +73,17 @@ Result<std::shared_ptr<DataSource>> FileSystemDataSource::Make(
               std::move(source_partition), std::move(format));
 }
 
-Result<std::shared_ptr<DataSource>> FileSystemDataSource::Make(
+Result<std::shared_ptr<Source>> FileSystemSource::Make(
     std::shared_ptr<fs::FileSystem> filesystem, fs::PathForest forest,
     ExpressionVector partitions, std::shared_ptr<Expression> source_partition,
     std::shared_ptr<FileFormat> format) {
-  return std::shared_ptr<DataSource>(new FileSystemDataSource(
+  return std::shared_ptr<Source>(new FileSystemSource(
       std::move(filesystem), std::move(forest), std::move(partitions),
       std::move(source_partition), std::move(format)));
 }
 
-std::string FileSystemDataSource::ToString() const {
-  std::string repr = "FileSystemDataSource:";
+std::string FileSystemSource::ToString() const {
+  std::string repr = "FileSystemSource:";
 
   if (forest_.size() == 0) {
     return repr + " []";
@@ -128,7 +128,7 @@ util::optional<std::pair<std::string, std::shared_ptr<Scalar>>> GetKey(
       internal::checked_cast<const ScalarExpression&>(*cmp.right_operand()).value());
 }
 
-FragmentIterator FileSystemDataSource::GetFragmentsImpl(
+FragmentIterator FileSystemSource::GetFragmentsImpl(
     std::shared_ptr<ScanOptions> root_options) {
   FragmentVector fragments;
   std::vector<std::shared_ptr<ScanOptions>> options(forest_.size());

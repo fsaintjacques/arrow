@@ -20,7 +20,7 @@
 #if defined(ARROW_R_WITH_ARROW)
 
 // [[arrow::export]]
-std::shared_ptr<ds::DataSourceDiscovery> dataset___FSDSDiscovery__Make2(
+std::shared_ptr<ds::SourceDiscovery> dataset___FSDSDiscovery__Make2(
     const std::shared_ptr<fs::FileSystem>& fs,
     const std::shared_ptr<fs::FileSelector>& selector,
     const std::shared_ptr<ds::PartitionScheme>& partition_scheme) {
@@ -34,32 +34,32 @@ std::shared_ptr<ds::DataSourceDiscovery> dataset___FSDSDiscovery__Make2(
   }
 
   return VALUE_OR_STOP(
-      ds::FileSystemDataSourceDiscovery::Make(fs, *selector, format, options));
+      ds::FileSystemSourceDiscovery::Make(fs, *selector, format, options));
 }
 
 // [[arrow::export]]
-std::shared_ptr<ds::DataSourceDiscovery> dataset___FSDSDiscovery__Make1(
+std::shared_ptr<ds::SourceDiscovery> dataset___FSDSDiscovery__Make1(
     const std::shared_ptr<fs::FileSystem>& fs,
     const std::shared_ptr<fs::FileSelector>& selector) {
   return dataset___FSDSDiscovery__Make2(fs, selector, nullptr);
 }
 
 // [[arrow::export]]
-std::shared_ptr<ds::DataSource> dataset___DSDiscovery__Finish1(
-    const std::shared_ptr<ds::DataSourceDiscovery>& discovery) {
+std::shared_ptr<ds::Source> dataset___DSDiscovery__Finish1(
+    const std::shared_ptr<ds::SourceDiscovery>& discovery) {
   return VALUE_OR_STOP(discovery->Finish());
 }
 
 // [[arrow::export]]
-std::shared_ptr<ds::DataSource> dataset___DSDiscovery__Finish2(
-    const std::shared_ptr<ds::DataSourceDiscovery>& discovery,
+std::shared_ptr<ds::Source> dataset___DSDiscovery__Finish2(
+    const std::shared_ptr<ds::SourceDiscovery>& discovery,
     const std::shared_ptr<arrow::Schema>& schema) {
   return VALUE_OR_STOP(discovery->Finish(schema));
 }
 
 // [[arrow::export]]
 std::shared_ptr<arrow::Schema> dataset___DSDiscovery__Inspect(
-    const std::shared_ptr<ds::DataSourceDiscovery>& discovery) {
+    const std::shared_ptr<ds::SourceDiscovery>& discovery) {
   return VALUE_OR_STOP(discovery->Inspect());
 }
 
@@ -77,7 +77,7 @@ std::shared_ptr<ds::PartitionScheme> dataset___HivePartitionScheme(
 
 // [[arrow::export]]
 std::shared_ptr<ds::Dataset> dataset___Dataset__create(
-    const ds::DataSourceVector& sources, const std::shared_ptr<arrow::Schema>& schm) {
+    const ds::SourceVector& sources, const std::shared_ptr<arrow::Schema>& schm) {
   return VALUE_OR_STOP(ds::Dataset::Make(sources, schm));
 }
 
